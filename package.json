@@ -1,0 +1,39 @@
+{
+  "name": "ufc-picks",
+  "version": "1.0.0",
+  "description": "A full-stack web application for making and tracking UFC fight predictions",
+  "main": "index.js",
+  "scripts": {
+    "install-all": "npm install && cd client && npm install && cd ../server && npm install",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "seed": "cd server && npm run seed",
+    "start": "cd server && npm start",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ufc",
+    "mma",
+    "predictions",
+    "picks",
+    "react",
+    "nodejs",
+    "express",
+    "sqlite"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/ufc-picks.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/ufc-picks/issues"
+  },
+  "homepage": "https://github.com/yourusername/ufc-picks#readme"
+} 
