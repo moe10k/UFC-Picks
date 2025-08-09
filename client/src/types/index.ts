@@ -81,7 +81,7 @@ export interface Pick {
   fightNumber: number;
   winner: 'fighter1' | 'fighter2';
   method: 'KO/TKO' | 'Submission' | 'Decision';
-  round: number;
+  round?: number; // Optional for Decision method
 }
 
 export interface UserPick {

@@ -29,7 +29,7 @@ const MakePicks: React.FC = () => {
           fightNumber: fight.fightNumber,
           winner: 'fighter1',
           method: 'Decision',
-          round: 3
+          round: undefined
         }));
         setPicks(initialPicks);
       } catch (error: any) {
@@ -45,11 +45,19 @@ const MakePicks: React.FC = () => {
 
   const handlePickChange = (fightNumber: number, field: keyof Pick, value: any) => {
     setPicks(prevPicks => 
-      prevPicks.map(pick => 
-        pick.fightNumber === fightNumber 
-          ? { ...pick, [field]: value }
-          : pick
-      )
+      prevPicks.map(pick => {
+        if (pick.fightNumber === fightNumber) {
+          const updatedPick = { ...pick, [field]: value };
+          
+          // If method is changed to Decision, clear the round
+          if (field === 'method' && value === 'Decision') {
+            updatedPick.round = undefined;
+          }
+          
+          return updatedPick;
+        }
+        return pick;
+      })
     );
   };
 
@@ -59,9 +67,20 @@ const MakePicks: React.FC = () => {
       return false;
     }
 
-    const hasInvalidPicks = picks.some(pick => 
-      !pick.winner || !pick.method || !pick.round
-    );
+    const hasInvalidPicks = picks.some(pick => {
+      // Check if winner and method are selected
+      if (!pick.winner || !pick.method) {
+        return true;
+      }
+      
+      // For Decision method, round is not required
+      // For other methods (KO/TKO, Submission), round is required
+      if (pick.method !== 'Decision' && (pick.round === undefined || pick.round === null)) {
+        return true;
+      }
+      
+      return false;
+    });
 
     if (hasInvalidPicks) {
       toast.error('Please complete all picks');
@@ -297,14 +316,22 @@ const MakePicks: React.FC = () => {
 
                 {/* Round */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-3">
+                  <label className={`block text-sm font-medium mb-3 ${
+                    pick?.method === 'Decision' ? 'text-gray-500' : 'text-gray-300'
+                  }`}>
                     Round
                   </label>
                   <select
-                    value={pick?.round || 3}
+                    value={pick?.method === 'Decision' ? '' : (pick?.round?.toString() || '3')}
                     onChange={(e) => handlePickChange(fight.fightNumber, 'round', parseInt(e.target.value))}
-                    className="input-field"
+                    disabled={pick?.method === 'Decision'}
+                    className={`input-field ${
+                      pick?.method === 'Decision' 
+                        ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+                        : ''
+                    }`}
                   >
+                    <option value="">Select Round</option>
                     <option value={1}>Round 1</option>
                     <option value={2}>Round 2</option>
                     <option value={3}>Round 3</option>
