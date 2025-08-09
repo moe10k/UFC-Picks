@@ -77,6 +77,57 @@ export const authAPI = {
     const response = await api.put('/auth/profile', profileData);
     return response.data;
   },
+
+  // Admin user management
+  getUsers: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    role?: 'admin' | 'user' | 'owner' | '';
+  }): Promise<{
+    users: User[];
+    pagination: {
+      current: number;
+      total: number;
+      totalUsers: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  }> => {
+    const response = await api.get('/auth/users', { params });
+    return response.data;
+  },
+
+  updateUserRole: async (userId: number, isAdmin: boolean): Promise<{
+    message: string;
+    user: User;
+  }> => {
+    const response = await api.put(`/auth/users/${userId}/role`, { isAdmin });
+    return response.data;
+  },
+
+  updateUserStatus: async (userId: number, isActive: boolean): Promise<{
+    message: string;
+    user: User;
+  }> => {
+    const response = await api.put(`/auth/users/${userId}/status`, { isActive });
+    return response.data;
+  },
+
+  getUserStats: async (): Promise<{
+    stats: {
+      totalUsers: number;
+      adminUsers: number;
+      ownerUsers: number;
+      activeUsers: number;
+      inactiveUsers: number;
+      recentUsers: number;
+      adminPercentage: string;
+    };
+  }> => {
+    const response = await api.get('/auth/users/stats');
+    return response.data;
+  },
 };
 
 // Events API

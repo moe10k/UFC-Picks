@@ -33,7 +33,7 @@ const auth = async (req, res, next) => {
 const adminAuth = async (req, res, next) => {
   try {
     await auth(req, res, () => {
-      if (!req.user.isAdmin) {
+      if (!req.user.isAdmin && !req.user.isOwner) {
         return res.status(403).json({ message: 'Admin access required' });
       }
       next();

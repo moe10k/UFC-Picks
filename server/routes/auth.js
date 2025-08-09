@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const { Op } = require('sequelize');
 const User = require('../models/User');
-const { auth } = require('../middleware/auth');
+const { auth, adminAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -254,6 +254,276 @@ router.post('/change-password', auth, [
   } catch (error) {
     console.error('Change password error:', error);
     res.status(500).json({ message: 'Server error changing password' });
+  }
+});
+
+// @route   GET /api/auth/users
+// @desc    Get all users (admin only)
+// @access  Admin
+router.get('/users', adminAuth, async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search = '', role = '' } = req.query;
+    const offset = (page - 1) * limit;
+    
+    const whereClause = {};
+    
+    // Add search functionality
+    if (search) {
+      whereClause[Op.or] = [
+        { username: { [Op.iLike]: `%${search}%` } },
+        { email: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+    
+    // Add role filter
+    if (role === 'admin') {
+      whereClause.isAdmin = true;
+    } else if (role === 'user') {
+      whereClause.isAdmin = false;
+      whereClause.isOwner = false;
+    } else if (role === 'owner') {
+      whereClause.isOwner = true;
+    }
+    
+    const { count, rows: users } = await User.findAndCountAll({
+      where: whereClause,
+      attributes: { exclude: ['password'] },
+      order: [['createdAt', 'DESC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+    
+    const totalPages = Math.ceil(count / limit);
+    
+    res.json({
+      users: users.map(user => ({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        avatar: user.avatar,
+        isAdmin: user.isAdmin,
+        isOwner: user.isOwner,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+        stats: user.getStats()
+      })),
+      pagination: {
+        current: parseInt(page),
+        total: totalPages,
+        totalUsers: count,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    });
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ message: 'Server error fetching users' });
+  }
+});
+
+// @route   PUT /api/auth/users/:userId/role
+// @desc    Update user role (admin only)
+// @access  Admin
+router.put('/users/:userId/role', adminAuth, [
+  body('isAdmin')
+    .isBoolean()
+    .withMessage('isAdmin must be a boolean value')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        message: 'Validation errors',
+        errors: errors.array()
+      });
+    }
+
+    const { userId } = req.params;
+    const { isAdmin } = req.body;
+    const adminUser = req.user;
+
+    // Prevent admin from removing their own admin role
+    if (parseInt(userId) === adminUser.id && !isAdmin) {
+      return res.status(400).json({ 
+        message: 'You cannot remove your own administrator privileges' 
+      });
+    }
+
+    // Find the target user
+    const targetUser = await User.findByPk(userId);
+    if (!targetUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Prevent modifying owner accounts (only owners can modify other owners)
+    if (targetUser.isOwner && !adminUser.isOwner) {
+      return res.status(403).json({ 
+        message: 'Only the owner can modify owner accounts' 
+      });
+    }
+
+    // Prevent owners from being demoted to regular users
+    if (targetUser.isOwner && !isAdmin) {
+      return res.status(400).json({ 
+        message: 'Owner accounts cannot be demoted to regular users' 
+      });
+    }
+
+    // Prevent deactivating the last admin (excluding owners)
+    if (!isAdmin && targetUser.isAdmin && !targetUser.isOwner) {
+      const adminCount = await User.count({ 
+        where: { 
+          isAdmin: true,
+          isOwner: false 
+        } 
+      });
+      if (adminCount <= 1) {
+        return res.status(400).json({ 
+          message: 'Cannot remove the last administrator. At least one admin must remain.' 
+        });
+      }
+    }
+
+    // Update the user's role
+    await targetUser.update({ isAdmin });
+
+    // Log the action for audit purposes
+    console.log(`Admin ${adminUser.username} (ID: ${adminUser.id}) ${isAdmin ? 'granted' : 'revoked'} admin privileges for user ${targetUser.username} (ID: ${targetUser.id})`);
+
+    res.json({
+      message: `Successfully ${isAdmin ? 'granted' : 'revoked'} administrator privileges for ${targetUser.username}`,
+      user: {
+        id: targetUser.id,
+        username: targetUser.username,
+        email: targetUser.email,
+        avatar: targetUser.avatar,
+        isAdmin: targetUser.isAdmin,
+        isOwner: targetUser.isOwner,
+        isActive: targetUser.isActive,
+        createdAt: targetUser.createdAt,
+        stats: targetUser.getStats()
+      }
+    });
+  } catch (error) {
+    console.error('Update user role error:', error);
+    res.status(500).json({ message: 'Server error updating user role' });
+  }
+});
+
+// @route   PUT /api/auth/users/:userId/status
+// @desc    Update user status (active/inactive) (admin only)
+// @access  Admin
+router.put('/users/:userId/status', adminAuth, [
+  body('isActive')
+    .isBoolean()
+    .withMessage('isActive must be a boolean value')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        message: 'Validation errors',
+        errors: errors.array()
+      });
+    }
+
+    const { userId } = req.params;
+    const { isActive } = req.body;
+    const adminUser = req.user;
+
+    // Prevent admin from deactivating their own account
+    if (parseInt(userId) === adminUser.id && !isActive) {
+      return res.status(400).json({ 
+        message: 'You cannot deactivate your own account' 
+      });
+    }
+
+    // Find the target user
+    const targetUser = await User.findByPk(userId);
+    if (!targetUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Prevent deactivating owner accounts
+    if (targetUser.isOwner && !isActive) {
+      return res.status(400).json({ 
+        message: 'Owner accounts cannot be deactivated' 
+      });
+    }
+
+    // Prevent deactivating the last active admin (excluding owners)
+    if (!isActive && targetUser.isAdmin && !targetUser.isOwner) {
+      const adminCount = await User.count({ 
+        where: { 
+          isAdmin: true, 
+          isActive: true,
+          isOwner: false 
+        } 
+      });
+      if (adminCount <= 1) {
+        return res.status(400).json({ 
+          message: 'Cannot deactivate the last active administrator. At least one admin must remain active.' 
+        });
+      }
+    }
+
+    // Update the user's status
+    await targetUser.update({ isActive });
+
+    // Log the action for audit purposes
+    console.log(`Admin ${adminUser.username} (ID: ${adminUser.id}) ${isActive ? 'activated' : 'deactivated'} user ${targetUser.username} (ID: ${targetUser.id})`);
+
+    res.json({
+      message: `Successfully ${isActive ? 'activated' : 'deactivated'} account for ${targetUser.username}`,
+      user: {
+        id: targetUser.id,
+        username: targetUser.username,
+        email: targetUser.email,
+        avatar: targetUser.avatar,
+        isAdmin: targetUser.isAdmin,
+        isOwner: targetUser.isOwner,
+        isActive: targetUser.isActive,
+        createdAt: targetUser.createdAt,
+        stats: targetUser.getStats()
+      }
+    });
+  } catch (error) {
+    console.error('Update user status error:', error);
+    res.status(500).json({ message: 'Server error updating user status' });
+  }
+});
+
+// @route   GET /api/auth/users/stats
+// @desc    Get user statistics (admin only)
+// @access  Admin
+router.get('/users/stats', adminAuth, async (req, res) => {
+  try {
+    const totalUsers = await User.count();
+    const adminUsers = await User.count({ where: { isAdmin: true, isOwner: false } });
+    const ownerUsers = await User.count({ where: { isOwner: true } });
+    const activeUsers = await User.count({ where: { isActive: true } });
+    const recentUsers = await User.count({
+      where: {
+        createdAt: {
+          [Op.gte]: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
+        }
+      }
+    });
+
+    res.json({
+      stats: {
+        totalUsers,
+        adminUsers,
+        ownerUsers,
+        activeUsers,
+        inactiveUsers: totalUsers - activeUsers,
+        recentUsers,
+        adminPercentage: totalUsers > 0 ? (((adminUsers + ownerUsers) / totalUsers) * 100).toFixed(1) : 0
+      }
+    });
+  } catch (error) {
+    console.error('Get user stats error:', error);
+    res.status(500).json({ message: 'Server error fetching user statistics' });
   }
 });
 
