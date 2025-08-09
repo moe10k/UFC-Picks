@@ -145,13 +145,13 @@ A full-stack web application for making and tracking UFC fight predictions. User
 ## Sample Data
 
 The application comes with sample data including:
-- Demo users (admin and regular user)
+- Admin user with full privileges
 - Sample UFC events with fight cards
 - Test data for development
 
 **Default login credentials:**
 - Admin: `admin@ufcpicks.com` / `admin123`
-- Demo: `demo@ufcpicks.com` / `demo123`
+
 
 ## Contributing
 

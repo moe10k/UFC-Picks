@@ -49,7 +49,7 @@ npm run seed
 
 This will create sample data including:
 - Admin user: `admin@ufcpicks.com` / `admin123`
-- Demo user: `demo@ufcpicks.com` / `demo123`
+
 - 3 upcoming UFC events with realistic fight cards (dated in 2026)
 
 ### 5. Start the Application
