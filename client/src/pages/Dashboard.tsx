@@ -88,9 +88,17 @@ const Dashboard: React.FC = () => {
                 {/* Fighter 1 */}
                 <div className="fighter-card text-center">
                   <div className="w-16 h-16 bg-gray-600 rounded-full mx-auto mb-2 flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">
-                      {fight.fighter1.name.charAt(0)}
-                    </span>
+                    {fight.fighter1.image ? (
+                      <img 
+                        src={fight.fighter1.image} 
+                        alt={fight.fighter1.name}
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    ) : (
+                      <span className="text-white font-bold text-lg">
+                        {fight.fighter1.name.charAt(0)}
+                      </span>
+                    )}
                   </div>
                   <h4 className="font-semibold text-white">{fight.fighter1.name}</h4>
                   {fight.fighter1.nickname && (
@@ -110,9 +118,17 @@ const Dashboard: React.FC = () => {
                 {/* Fighter 2 */}
                 <div className="fighter-card text-center">
                   <div className="w-16 h-16 bg-gray-600 rounded-full mx-auto mb-2 flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">
-                      {fight.fighter2.name.charAt(0)}
-                    </span>
+                    {fight.fighter2.image ? (
+                      <img 
+                        src={fight.fighter2.image} 
+                        alt={fight.fighter2.name}
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    ) : (
+                      <span className="text-white font-bold text-lg">
+                        {fight.fighter2.name.charAt(0)}
+                      </span>
+                    )}
                   </div>
                   <h4 className="font-semibold text-white">{fight.fighter2.name}</h4>
                   {fight.fighter2.nickname && (
