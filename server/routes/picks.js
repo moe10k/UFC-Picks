@@ -27,8 +27,23 @@ router.post('/', auth, [
     .isIn(['KO/TKO', 'Submission', 'Decision'])
     .withMessage('Method must be KO/TKO, Submission, or Decision'),
   body('picks.*.round')
-    .isInt({ min: 1, max: 5 })
-    .withMessage('Round must be between 1 and 5')
+    .optional()
+    .custom((value, { req, path }) => {
+      const pickIndex = path.split('.')[1];
+      const method = req.body.picks[pickIndex]?.method;
+      
+      // If method is Decision, round is not required
+      if (method === 'Decision') {
+        return true;
+      }
+      
+      // For other methods, round must be between 1 and 5
+      if (!value || !Number.isInteger(value) || value < 1 || value > 5) {
+        throw new Error('Round must be between 1 and 5 for KO/TKO and Submission methods');
+      }
+      
+      return true;
+    })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -226,8 +241,23 @@ router.put('/:pickId', auth, [
     .isIn(['KO/TKO', 'Submission', 'Decision'])
     .withMessage('Method must be KO/TKO, Submission, or Decision'),
   body('picks.*.round')
-    .isInt({ min: 1, max: 5 })
-    .withMessage('Round must be between 1 and 5')
+    .optional()
+    .custom((value, { req, path }) => {
+      const pickIndex = path.split('.')[1];
+      const method = req.body.picks[pickIndex]?.method;
+      
+      // If method is Decision, round is not required
+      if (method === 'Decision') {
+        return true;
+      }
+      
+      // For other methods, round must be between 1 and 5
+      if (!value || !Number.isInteger(value) || value < 1 || value > 5) {
+        throw new Error('Round must be between 1 and 5 for KO/TKO and Submission methods');
+      }
+      
+      return true;
+    })
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
