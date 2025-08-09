@@ -54,6 +54,11 @@ const MakePicks: React.FC = () => {
             updatedPick.round = undefined;
           }
           
+          // If method is changed from Decision to KO/TKO or Submission, set default round to 3
+          if (field === 'method' && value !== 'Decision' && pick.method === 'Decision') {
+            updatedPick.round = 3;
+          }
+          
           return updatedPick;
         }
         return pick;
@@ -163,12 +168,34 @@ const MakePicks: React.FC = () => {
               {event.name}
             </h2>
             
-            <div className="flex items-center gap-2 text-yellow-400">
+            <div className="flex items-center gap-2 text-yellow-400 mb-4">
               <ClockIcon className="h-5 w-5" />
               <span className="text-sm">
                 Deadline: {format(new Date(event.pickDeadline), 'MMM d, yyyy h:mm a')}
               </span>
             </div>
+
+            {/* Progress Summary */}
+            {(() => {
+              const totalPicks = picks.length;
+              const completePicks = picks.filter(pick => 
+                pick.winner && pick.method && (pick.method === 'Decision' || pick.round !== undefined && pick.round !== null)
+              ).length;
+              const incompletePicks = totalPicks - completePicks;
+              
+              return (
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="text-gray-300">
+                    Progress: {completePicks}/{totalPicks} picks complete
+                  </span>
+                  {incompletePicks > 0 && (
+                    <span className="text-red-400">
+                      {incompletePicks} pick{incompletePicks !== 1 ? 's' : ''} remaining
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
           </div>
           
           <div className="lg:flex-shrink-0">
@@ -211,6 +238,11 @@ const MakePicks: React.FC = () => {
                   {fight.isCoMainEvent && (
                     <span className="px-3 py-1 bg-ufc-gold rounded-full text-sm font-medium text-black">
                       Co-Main
+                    </span>
+                  )}
+                  {pick && (!pick.winner || !pick.method || (pick.method !== 'Decision' && (pick.round === undefined || pick.round === null))) && (
+                    <span className="px-3 py-1 bg-red-600 rounded-full text-sm font-medium text-white">
+                      Incomplete
                     </span>
                   )}
                 </div>
@@ -322,8 +354,8 @@ const MakePicks: React.FC = () => {
                     Round
                   </label>
                   <select
-                    value={pick?.method === 'Decision' ? '' : (pick?.round?.toString() || '3')}
-                    onChange={(e) => handlePickChange(fight.fightNumber, 'round', parseInt(e.target.value))}
+                    value={pick?.method === 'Decision' ? '' : (pick?.round?.toString() || '')}
+                    onChange={(e) => handlePickChange(fight.fightNumber, 'round', e.target.value ? parseInt(e.target.value) : undefined)}
                     disabled={pick?.method === 'Decision'}
                     className={`input-field ${
                       pick?.method === 'Decision' 
