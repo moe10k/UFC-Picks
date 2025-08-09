@@ -5,6 +5,8 @@ export interface User {
   avatar?: string;
   stats: UserStats;
   isAdmin?: boolean;
+  isOwner?: boolean;
+  isActive?: boolean;
   createdAt?: string;
 }
 

@@ -63,6 +63,7 @@ const Navbar: React.FC = () => {
     { name: 'Create Event', href: '/admin/events/create', icon: PlusIcon },
     { name: 'Manage Events', href: '/admin/events', icon: CalendarIcon },
     { name: 'Update Results', href: '/admin/results', icon: ChartBarIcon },
+    { name: 'User Management', href: '/admin/users', icon: UserIcon },
   ];
 
   const userOptions = [
@@ -108,7 +109,7 @@ const Navbar: React.FC = () => {
             })}
             
             {/* Admin Dropdown */}
-            {user?.isAdmin && (
+            {(user?.isAdmin || user?.isOwner) && (
               <div className="relative" ref={adminDropdownRef}>
                 <button
                   onClick={() => setIsAdminDropdownOpen(!isAdminDropdownOpen)}
@@ -247,7 +248,7 @@ const Navbar: React.FC = () => {
             })}
             
             {/* Admin Navigation Mobile */}
-            {user?.isAdmin && (
+            {(user?.isAdmin || user?.isOwner) && (
               <>
                 <div className="border-t border-gray-700 pt-4 mt-4">
                   <p className="px-3 py-2 text-xs font-semibold text-yellow-400 uppercase tracking-wider">

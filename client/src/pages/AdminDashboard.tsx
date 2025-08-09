@@ -36,7 +36,7 @@ const AdminDashboard: React.FC = () => {
     fetchEvents();
   }, []);
 
-  if (!user?.isAdmin) {
+  if (!user?.isAdmin && !user?.isOwner) {
     return (
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold text-white mb-4">Access Denied</h2>
@@ -81,6 +81,14 @@ const AdminDashboard: React.FC = () => {
       href: '/admin/results',
       color: 'bg-yellow-600 hover:bg-yellow-700',
       textColor: 'text-yellow-100'
+    },
+    {
+      title: 'User Management',
+      description: 'Manage users and admin privileges',
+      icon: UsersIcon,
+      href: '/admin/users',
+      color: 'bg-purple-600 hover:bg-purple-700',
+      textColor: 'text-purple-100'
     }
   ];
 
@@ -142,7 +150,7 @@ const AdminDashboard: React.FC = () => {
           <Cog6ToothIcon className="w-6 h-6 mr-3 text-ufc-gold" />
           Quick Actions
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {quickActions.map((action) => (
             <Link
               key={action.title}

@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 // Components
 import Navbar from './components/Navbar';
 import LoadingSpinner from './components/LoadingSpinner';
+import AdminRoute from './components/AdminRoute';
 
 // Pages
 import Login from './pages/Login';
@@ -25,6 +26,7 @@ import AdminCreateEvent from './pages/AdminCreateEvent';
 import AdminEditEvent from './pages/AdminEditEvent';
 import AdminResults from './pages/AdminResults';
 import AdminEventResults from './pages/AdminEventResults';
+import AdminUsers from './pages/AdminUsers';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -126,32 +128,51 @@ const AppContent: React.FC = () => {
             {/* Admin Routes */}
             <Route path="/admin" element={
               <ProtectedRoute>
-                <AdminDashboard />
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
               </ProtectedRoute>
             } />
             <Route path="/admin/events" element={
               <ProtectedRoute>
-                <AdminEvents />
+                <AdminRoute>
+                  <AdminEvents />
+                </AdminRoute>
               </ProtectedRoute>
             } />
             <Route path="/admin/events/create" element={
               <ProtectedRoute>
-                <AdminCreateEvent />
+                <AdminRoute>
+                  <AdminCreateEvent />
+                </AdminRoute>
               </ProtectedRoute>
             } />
             <Route path="/admin/events/:id" element={
               <ProtectedRoute>
-                <AdminEditEvent />
+                <AdminRoute>
+                  <AdminEditEvent />
+                </AdminRoute>
               </ProtectedRoute>
             } />
             <Route path="/admin/events/:id/results" element={
               <ProtectedRoute>
-                <AdminEventResults />
+                <AdminRoute>
+                  <AdminEventResults />
+                </AdminRoute>
               </ProtectedRoute>
             } />
             <Route path="/admin/results" element={
               <ProtectedRoute>
-                <AdminResults />
+                <AdminRoute>
+                  <AdminResults />
+                </AdminRoute>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/users" element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <AdminUsers />
+                </AdminRoute>
               </ProtectedRoute>
             } />
 

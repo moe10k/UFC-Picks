@@ -146,13 +146,15 @@ const sampleUsers = [
     username: "admin",
     email: "admin@ufcpicks.com",
     password: "admin123",
-    isAdmin: true
+    isAdmin: true,
+    isOwner: true
   },
   {
     username: "demo_user",
     email: "demo@ufcpicks.com",
     password: "demo123",
-    isAdmin: false
+    isAdmin: false,
+    isOwner: false
   }
 ];
 
