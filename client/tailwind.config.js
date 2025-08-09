@@ -12,6 +12,7 @@ module.exports = {
         'ufc-gold': '#FFD700',
         'ufc-dark': '#1A1A1A',
         'ufc-gray': '#2A2A2A',
+        'gray-750': '#3A3A3A',
         'ufc-lightgray': '#F5F5F5',
         ufc: {
           red: '#D20A11',

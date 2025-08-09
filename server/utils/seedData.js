@@ -163,9 +163,13 @@ const seedData = async () => {
     // Sync database to ensure tables exist
     await sequelize.sync({ force: true });
 
-    // Create sample users
+    // Create sample users individually to ensure password hashing works
     console.log('Creating sample users...');
-    const createdUsers = await User.bulkCreate(sampleUsers);
+    const createdUsers = [];
+    for (const userData of sampleUsers) {
+      const user = await User.create(userData);
+      createdUsers.push(user);
+    }
     console.log(`✅ Created ${createdUsers.length} users`);
 
     // Create sample events

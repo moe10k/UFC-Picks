@@ -17,6 +17,14 @@ import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
 import MyPicks from './pages/MyPicks';
 
+// Admin Pages
+import AdminDashboard from './pages/AdminDashboard';
+import AdminEvents from './pages/AdminEvents';
+import AdminCreateEvent from './pages/AdminCreateEvent';
+import AdminEditEvent from './pages/AdminEditEvent';
+import AdminResults from './pages/AdminResults';
+import AdminEventResults from './pages/AdminEventResults';
+
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -106,6 +114,38 @@ const AppContent: React.FC = () => {
             <Route path="/my-picks" element={
               <ProtectedRoute>
                 <MyPicks />
+              </ProtectedRoute>
+            } />
+
+            {/* Admin Routes */}
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/events" element={
+              <ProtectedRoute>
+                <AdminEvents />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/events/create" element={
+              <ProtectedRoute>
+                <AdminCreateEvent />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/events/:id" element={
+              <ProtectedRoute>
+                <AdminEditEvent />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/events/:id/results" element={
+              <ProtectedRoute>
+                <AdminEventResults />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/results" element={
+              <ProtectedRoute>
+                <AdminResults />
               </ProtectedRoute>
             } />
 

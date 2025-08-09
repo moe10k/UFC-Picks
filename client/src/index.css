@@ -25,8 +25,16 @@
     @apply border-2 border-ufc-red text-ufc-red hover:bg-ufc-red hover:text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
   }
   
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+  
   .card {
     @apply bg-ufc-gray rounded-lg p-6 shadow-lg border border-gray-700;
+  }
+  
+  .hover\:bg-gray-750:hover {
+    @apply bg-gray-750;
   }
   
   .input-field {
