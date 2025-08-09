@@ -49,7 +49,7 @@ export interface Fight {
   fighter2: Fighter;
   result?: {
     winner?: 'fighter1' | 'fighter2';
-    method?: 'KO/TKO' | 'Submission' | 'Decision' | 'DQ' | 'No Contest';
+    method?: 'KO/TKO' | 'Submission' | 'Decision';
     round?: number;
     time?: string;
   };

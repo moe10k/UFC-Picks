@@ -148,13 +148,6 @@ const sampleUsers = [
     password: "admin123",
     isAdmin: true,
     isOwner: true
-  },
-  {
-    username: "demo_user",
-    email: "demo@ufcpicks.com",
-    password: "demo123",
-    isAdmin: false,
-    isOwner: false
   }
 ];
 
@@ -182,7 +175,6 @@ const seedData = async () => {
     console.log('🎉 Database seeding completed successfully!');
     console.log('\nSample login credentials:');
     console.log('Admin: admin@ufcpicks.com / admin123');
-    console.log('Demo: demo@ufcpicks.com / demo123');
     
   } catch (error) {
     console.error('❌ Error seeding database:', error);

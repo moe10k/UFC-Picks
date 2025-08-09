@@ -144,6 +144,7 @@ router.get('/my-picks', auth, async (req, res) => {
         {
           model: Event,
           as: 'event',
+          where: { isActive: true }, // Only include active events
           attributes: ['id', 'name', 'date', 'status', 'pickDeadline', 'fights']
         }
       ],
@@ -186,6 +187,7 @@ router.get('/user/:userId', auth, async (req, res) => {
       include: [{
         model: Event,
         as: 'event',
+        where: { isActive: true }, // Only include active events
         attributes: ['id', 'name', 'date', 'status', 'pickDeadline', 'fights']
       }],
       order: [['createdAt', 'DESC']]

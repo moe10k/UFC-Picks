@@ -126,7 +126,7 @@ const AdminEventResults: React.FC = () => {
   }
 
   const methods = [
-    'Decision', 'TKO', 'KO', 'Submission', 'DQ', 'No Contest'
+    'Decision', 'KO/TKO', 'Submission'
   ];
 
   const rounds = Array.from({ length: 5 }, (_, i) => i + 1);
@@ -225,8 +225,8 @@ const AdminEventResults: React.FC = () => {
                         required
                       >
                         <option value="">Select winner</option>
-                        <option value={fight.fighter1.name}>{fight.fighter1.name}</option>
-                        <option value={fight.fighter2.name}>{fight.fighter2.name}</option>
+                        <option value="fighter1">{fight.fighter1.name}</option>
+                        <option value="fighter2">{fight.fighter2.name}</option>
                       </select>
                     </div>
                     

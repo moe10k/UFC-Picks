@@ -22,8 +22,64 @@ router.get('/', async (req, res) => {
       offset: (parseInt(page) - 1) * parseInt(limit)
     });
 
-    // Calculate rankings
-    const leaderboard = users.map((user, index) => ({
+    // Validate totals for each user to ensure accuracy
+    const validatedUsers = await Promise.all(users.map(async (user) => {
+      // Get actual totals from user's scored picks
+      const actualPicks = await Pick.findAll({
+        where: { 
+          user_id: user.id, 
+          isScored: true 
+        },
+        include: [{
+          model: Event,
+          as: 'event',
+          where: { isActive: true }
+        }]
+      });
+      
+      let actualTotalPoints = 0;
+      let actualCorrectPicks = 0;
+      let actualTotalPicks = 0;
+      let actualEventsParticipated = 0;
+      let actualBestEventScore = 0;
+      
+      for (const pick of actualPicks) {
+        actualTotalPoints += pick.totalPoints || 0;
+        actualCorrectPicks += pick.correctPicks || 0;
+        actualTotalPicks += pick.picks?.length || 0;
+        actualEventsParticipated += 1;
+        actualBestEventScore = Math.max(actualBestEventScore, pick.totalPoints || 0);
+      }
+      
+      // Check if stored totals match actual totals
+      const hasDiscrepancy = 
+        user.totalPoints !== actualTotalPoints ||
+        user.correctPicks !== actualCorrectPicks ||
+        user.totalPicks !== actualTotalPicks ||
+        user.eventsParticipated !== actualEventsParticipated ||
+        user.bestEventScore !== actualBestEventScore;
+      
+      if (hasDiscrepancy) {
+        console.warn(`⚠️  Data discrepancy detected for user ${user.username}:`);
+        console.warn(`  Stored: ${user.totalPoints} points, ${user.correctPicks}/${user.totalPicks} correct`);
+        console.warn(`  Actual: ${actualTotalPoints} points, ${actualCorrectPicks}/${actualTotalPicks} correct`);
+        
+        // Use actual totals for display
+        return {
+          ...user.toJSON(),
+          totalPoints: actualTotalPoints,
+          correctPicks: actualCorrectPicks,
+          totalPicks: actualTotalPicks,
+          eventsParticipated: actualEventsParticipated,
+          bestEventScore: actualBestEventScore
+        };
+      }
+      
+      return user;
+    }));
+
+    // Calculate rankings using validated data
+    const leaderboard = validatedUsers.map((user, index) => ({
       rank: (parseInt(page) - 1) * parseInt(limit) + index + 1,
       user: {
         id: user.id,
