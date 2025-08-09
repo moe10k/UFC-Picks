@@ -88,7 +88,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 };
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<void>;
+  login: (emailOrUsername: string, password: string) => Promise<void>;
   register: (userData: {
     username: string;
     email: string;
@@ -139,10 +139,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loadUser();
   }, [state.token]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (emailOrUsername: string, password: string) => {
     try {
       dispatch({ type: 'LOGIN_START' });
-      const { user, token } = await authAPI.login({ email, password });
+      const { user, token } = await authAPI.login({ emailOrUsername, password });
       
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));

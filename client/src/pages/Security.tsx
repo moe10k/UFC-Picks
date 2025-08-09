@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { ShieldCheckIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 
 const Security: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -13,6 +15,7 @@ const Security: React.FC = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,22 +30,44 @@ const Security: React.FC = () => {
       return;
     }
 
+    // Show confirmation dialog
+    setShowConfirmation(true);
+  };
+
+  const confirmPasswordChange = async () => {
     setIsLoading(true);
+    setShowConfirmation(false);
+    
     try {
       await api.post('/auth/change-password', {
         currentPassword,
         newPassword
       });
       
-      toast.success('Password changed successfully');
+      // Show success message
+      toast.success('Password changed successfully! You will be logged out to secure your account.');
+      
+      // Clear form
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
+      
+      // Wait a moment for the user to see the success message, then logout and redirect
+      setTimeout(() => {
+        logout();
+        navigate('/login');
+        toast.success('Please log in with your new password');
+      }, 2000);
+      
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to change password');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const cancelPasswordChange = () => {
+    setShowConfirmation(false);
   };
 
   return (
@@ -156,6 +181,34 @@ const Security: React.FC = () => {
           </div>
         </form>
 
+        {/* Confirmation Dialog */}
+        {showConfirmation && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-ufc-gray rounded-lg p-6 max-w-md w-full mx-4 border border-gray-600">
+              <h3 className="text-lg font-semibold text-white mb-4">Confirm Password Change</h3>
+              <p className="text-gray-300 mb-6">
+                Are you sure you want to change your password? You will be logged out and need to sign in again with your new password.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={cancelPasswordChange}
+                  disabled={isLoading}
+                  className="px-4 py-2 text-gray-300 hover:text-white border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmPasswordChange}
+                  disabled={isLoading}
+                  className="px-4 py-2 bg-ufc-red text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  {isLoading ? 'Changing...' : 'Confirm Change'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mt-8 p-4 bg-yellow-900/20 border border-yellow-700/30 rounded-lg">
           <h3 className="text-sm font-semibold text-yellow-400 mb-2">Security Tips</h3>
           <ul className="text-sm text-gray-300 space-y-1">
@@ -163,6 +216,7 @@ const Security: React.FC = () => {
             <li>• Never share your password with anyone</li>
             <li>• Consider using a password manager for better security</li>
             <li>• Change your password regularly</li>
+            <li>• You will be automatically logged out after changing your password for security</li>
           </ul>
         </div>
       </div>

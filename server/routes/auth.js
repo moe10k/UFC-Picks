@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const { Op } = require('sequelize');
+const { sequelize } = require('../config/database');
 const User = require('../models/User');
 const { auth, adminAuth } = require('../middleware/auth');
 
@@ -22,9 +23,18 @@ router.post('/register', [
     .isLength({ min: 3, max: 30 })
     .withMessage('Username must be between 3 and 30 characters')
     .matches(/^[a-zA-Z0-9_]+$/)
-    .withMessage('Username can only contain letters, numbers, and underscores'),
+    .withMessage('Username can only contain letters, numbers, and underscores')
+    .custom((value) => {
+      const reservedUsernames = ['admin', 'administrator', 'root', 'system', 'user', 'test', 'guest', 'anonymous'];
+      if (reservedUsernames.includes(value.toLowerCase())) {
+        throw new Error('Username is reserved and cannot be used');
+      }
+      return true;
+    }),
   body('email')
     .isEmail()
+    .withMessage('Please provide a valid email')
+    .normalizeEmail()
     .withMessage('Please provide a valid email'),
   body('password')
     .isLength({ min: 6 })
@@ -40,26 +50,43 @@ router.post('/register', [
     }
 
     const { username, email, password } = req.body;
+    
+    // Normalize email and username (trim whitespace and convert to lowercase for comparison)
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedUsername = username.trim().toLowerCase();
 
-    // Check if user already exists
-    const existingUser = await User.findOne({
-      where: {
-        [Op.or]: [{ email }, { username }]
-      }
+    // Check if email already exists (case-insensitive)
+    const existingEmail = await User.findOne({
+      where: sequelize.where(
+        sequelize.fn('LOWER', sequelize.col('email')), 
+        normalizedEmail
+      )
     });
 
-    if (existingUser) {
+    if (existingEmail) {
       return res.status(400).json({
-        message: existingUser.email === email 
-          ? 'Email already registered' 
-          : 'Username already taken'
+        message: 'Email already registered'
       });
     }
 
-    // Create new user
+    // Check if username already exists (case-insensitive)
+    const existingUsername = await User.findOne({
+      where: sequelize.where(
+        sequelize.fn('LOWER', sequelize.col('username')), 
+        normalizedUsername
+      )
+    });
+
+    if (existingUsername) {
+      return res.status(400).json({
+        message: 'Username already taken'
+      });
+    }
+
+    // Create new user with normalized values
     const user = await User.create({
-      username,
-      email,
+      username: username.trim(),
+      email: email.trim(),
       password
     });
 
@@ -80,7 +107,61 @@ router.post('/register', [
     });
   } catch (error) {
     console.error('Registration error:', error);
+    
+    // Handle database constraint violations
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      const field = error.fields ? Object.keys(error.fields)[0] : 'unknown';
+      if (field === 'email') {
+        return res.status(400).json({ message: 'Email already registered' });
+      } else if (field === 'username') {
+        return res.status(400).json({ message: 'Username already taken' });
+      }
+    }
+    
     res.status(500).json({ message: 'Server error during registration' });
+  }
+});
+
+// @route   GET /api/auth/check-availability
+// @desc    Check if username or email is available
+// @access  Public
+router.get('/check-availability', async (req, res) => {
+  try {
+    const { username, email } = req.query;
+    const result = {};
+
+    if (username) {
+      const normalizedUsername = username.trim().toLowerCase();
+      const existingUsername = await User.findOne({
+        where: sequelize.where(
+          sequelize.fn('LOWER', sequelize.col('username')), 
+          normalizedUsername
+        )
+      });
+      result.username = {
+        available: !existingUsername,
+        message: existingUsername ? 'Username already taken' : 'Username available'
+      };
+    }
+
+    if (email) {
+      const normalizedEmail = email.trim().toLowerCase();
+      const existingEmail = await User.findOne({
+        where: sequelize.where(
+          sequelize.fn('LOWER', sequelize.col('email')), 
+          normalizedEmail
+        )
+      });
+      result.email = {
+        available: !existingEmail,
+        message: existingEmail ? 'Email already registered' : 'Email available'
+      };
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Check availability error:', error);
+    res.status(500).json({ message: 'Server error checking availability' });
   }
 });
 
@@ -88,9 +169,9 @@ router.post('/register', [
 // @desc    Login user
 // @access  Public
 router.post('/login', [
-  body('email')
-    .isEmail()
-    .withMessage('Please provide a valid email'),
+  body('emailOrUsername')
+    .notEmpty()
+    .withMessage('Email or username is required'),
   body('password')
     .notEmpty()
     .withMessage('Password is required')
@@ -104,10 +185,23 @@ router.post('/login', [
       });
     }
 
-    const { email, password } = req.body;
+    const { emailOrUsername, password } = req.body;
 
-    // Find user by email
-    const user = await User.findOne({ where: { email } });
+    // Find user by email or username (case-insensitive)
+    const user = await User.findOne({
+      where: {
+        [Op.or]: [
+          sequelize.where(
+            sequelize.fn('LOWER', sequelize.col('email')), 
+            sequelize.fn('LOWER', emailOrUsername)
+          ),
+          sequelize.where(
+            sequelize.fn('LOWER', sequelize.col('username')), 
+            sequelize.fn('LOWER', emailOrUsername)
+          )
+        ]
+      }
+    });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
