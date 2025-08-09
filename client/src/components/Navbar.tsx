@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -7,7 +7,13 @@ import {
   UserIcon, 
   Bars3Icon, 
   XMarkIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  Cog6ToothIcon,
+  PlusIcon,
+  ChevronDownIcon,
+  CalendarIcon,
+  ChartBarIcon,
+  PencilIcon
 } from '@heroicons/react/24/outline';
 
 const Navbar: React.FC = () => {
@@ -15,16 +21,41 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAdminDropdownOpen, setIsAdminDropdownOpen] = useState(false);
+  const adminDropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (adminDropdownRef.current && !adminDropdownRef.current.contains(event.target as Node)) {
+        setIsAdminDropdownOpen(false);
+      }
+    };
+
+    if (isAdminDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [isAdminDropdownOpen]);
+
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
     { name: 'Leaderboard', href: '/leaderboard', icon: TrophyIcon },
     { name: 'My Picks', href: '/my-picks', icon: UserIcon },
+  ];
+
+  const adminOptions = [
+    { name: 'Dashboard', href: '/admin', icon: Cog6ToothIcon },
+    { name: 'Create Event', href: '/admin/events/create', icon: PlusIcon },
+    { name: 'Manage Events', href: '/admin/events', icon: CalendarIcon },
+    { name: 'Update Results', href: '/admin/results', icon: ChartBarIcon },
   ];
 
   if (!isAuthenticated) {
@@ -63,6 +94,48 @@ const Navbar: React.FC = () => {
                 </Link>
               );
             })}
+            
+            {/* Admin Dropdown */}
+            {user?.isAdmin && (
+              <div className="relative" ref={adminDropdownRef}>
+                <button
+                  onClick={() => setIsAdminDropdownOpen(!isAdminDropdownOpen)}
+                  className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    location.pathname.startsWith('/admin')
+                      ? 'bg-yellow-600 text-white'
+                      : 'text-yellow-300 hover:text-yellow-200 hover:bg-yellow-700'
+                  }`}
+                >
+                  <Cog6ToothIcon className="w-5 h-5 mr-2" />
+                  Admin
+                  <ChevronDownIcon className="w-4 h-4 ml-1" />
+                </button>
+                
+                {isAdminDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-600">
+                    {adminOptions.map((option) => {
+                      const isActive = location.pathname === option.href || 
+                        (option.href !== '/admin' && location.pathname.startsWith(option.href));
+                      return (
+                        <Link
+                          key={option.name}
+                          to={option.href}
+                          className={`flex items-center px-4 py-2 text-sm transition-colors ${
+                            isActive
+                              ? 'bg-yellow-600 text-white'
+                              : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                          }`}
+                          onClick={() => setIsAdminDropdownOpen(false)}
+                        >
+                          <option.icon className="w-4 h-4 mr-3" />
+                          {option.name}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* User Menu */}
@@ -135,6 +208,36 @@ const Navbar: React.FC = () => {
                 </Link>
               );
             })}
+            
+            {/* Admin Navigation Mobile */}
+            {user?.isAdmin && (
+              <>
+                <div className="border-t border-gray-700 pt-4 mt-4">
+                  <p className="px-3 py-2 text-xs font-semibold text-yellow-400 uppercase tracking-wider">
+                    Admin
+                  </p>
+                </div>
+                {adminOptions.map((option) => {
+                  const isActive = location.pathname === option.href || 
+                    (option.href !== '/admin' && location.pathname.startsWith(option.href));
+                  return (
+                    <Link
+                      key={option.name}
+                      to={option.href}
+                      className={`flex items-center px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                        isActive
+                          ? 'bg-yellow-600 text-white'
+                          : 'text-yellow-300 hover:text-yellow-200 hover:bg-yellow-700'
+                      }`}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <option.icon className="w-5 h-5 mr-3" />
+                      {option.name}
+                    </Link>
+                  );
+                })}
+              </>
+            )}
             <div className="border-t border-gray-700 pt-4 mt-4">
               <div className="flex items-center px-3 py-2">
                 <div className="w-8 h-8 bg-ufc-red rounded-full flex items-center justify-center mr-3">

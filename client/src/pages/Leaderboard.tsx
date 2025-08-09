@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { TrophyIcon, StarIcon } from '@heroicons/react/24/outline';
-import { leaderboardAPI, eventsAPI } from '../services/api';
+import { leaderboardAPI } from '../services/api';
 import { LeaderboardEntry, Event } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
