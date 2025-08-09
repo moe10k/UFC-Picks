@@ -22,6 +22,7 @@ const sampleEvents = [
         fighter1: {
           name: "Dricus Du Plessis",
           nickname: "Stillknocks",
+          image: "/fighter-images/dricus-du-plessis.jpg",
           record: { wins: 23, losses: 2, draws: 0 },
           stats: {
             age: 31,
@@ -35,6 +36,7 @@ const sampleEvents = [
         fighter2: {
           name: "Khamzat Chimaev",
           nickname: "Borz",
+          image: "/fighter-images/khamzat-chimaev.jpg",
           record: { wins: 14, losses: 0, draws: 0 },
           stats: {
             age: 31,
@@ -56,12 +58,14 @@ const sampleEvents = [
         fighter1: {
           name: "Lerone Murphy",
           nickname: "",
+          image: "/fighter-images/lerone-murphy.jpg",
           record: { wins: 16, losses: 0, draws: 1 },
           stats: {}
         },
         fighter2: {
           name: "Aaron Pico",
           nickname: "",
+          image: "/fighter-images/aaron-pico.jpg",
           record: { wins: 13, losses: 4, draws: 0 },
           stats: {}
         },
@@ -76,12 +80,14 @@ const sampleEvents = [
         fighter1: {
           name: "Geoff Neal",
           nickname: "",
+          image: "/fighter-images/geoff-neal.jpg",
           record: { wins: 16, losses: 6, draws: 0 },
           stats: {}
         },
         fighter2: {
           name: "Carlos Prates",
           nickname: "",
+          image: "/fighter-images/carlos-prates.jpg",
           record: { wins: 21, losses: 7, draws: 0 },
           stats: {}
         },
@@ -96,12 +102,14 @@ const sampleEvents = [
         fighter1: {
           name: "Jared Cannonier",
           nickname: "",
+          image: "/fighter-images/jared-cannonier.jpg",
           record: { wins: 18, losses: 8, draws: 0 },
           stats: {}
         },
         fighter2: {
           name: "Michael Page",
           nickname: "Venom",
+          image: "/fighter-images/michael-page.jpg",
           record: { wins: 23, losses: 3, draws: 0 },
           stats: {}
         },
@@ -116,12 +124,14 @@ const sampleEvents = [
         fighter1: {
           name: "Tim Elliott",
           nickname: "",
+          image: "/fighter-images/tim-elliott.jpg",
           record: { wins: 21, losses: 13, draws: 1 },
           stats: {}
         },
         fighter2: {
           name: "Kai Asakura",
           nickname: "",
+          image: "/fighter-images/kai-asakura.jpg",
           record: { wins: 21, losses: 5, draws: 0 },
           stats: {}
         },
