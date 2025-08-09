@@ -70,13 +70,13 @@ const Navbar: React.FC = () => {
             <div className="flex items-center space-x-3">
               <div className="text-right">
                 <p className="text-sm font-medium text-white">
-                  {user?.firstName} {user?.lastName}
+                  @{user?.username}
                 </p>
-                <p className="text-xs text-gray-400">@{user?.username}</p>
+                <p className="text-xs text-gray-400">{user?.email}</p>
               </div>
               <div className="w-8 h-8 bg-ufc-red rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-bold">
-                  {user?.firstName?.charAt(0)}
+                  {user?.username?.charAt(0).toUpperCase()}
                 </span>
               </div>
             </div>
@@ -139,14 +139,14 @@ const Navbar: React.FC = () => {
               <div className="flex items-center px-3 py-2">
                 <div className="w-8 h-8 bg-ufc-red rounded-full flex items-center justify-center mr-3">
                   <span className="text-white text-sm font-bold">
-                    {user?.firstName?.charAt(0)}
+                    {user?.username?.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-white">
-                    {user?.firstName} {user?.lastName}
+                    @{user?.username}
                   </p>
-                  <p className="text-xs text-gray-400">@{user?.username}</p>
+                  <p className="text-xs text-gray-400">{user?.email}</p>
                 </div>
               </div>
               <Link

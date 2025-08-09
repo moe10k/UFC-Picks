@@ -48,7 +48,7 @@ const Dashboard: React.FC = () => {
       {/* Welcome Section */}
       <div className="text-center">
         <h1 className="text-4xl font-bold text-white mb-2">
-          Welcome back, {user?.firstName}! 👊
+          Welcome back, @{user?.username}! 👊
         </h1>
         <p className="text-gray-400 text-lg">
           Ready to make your picks for the next UFC event?

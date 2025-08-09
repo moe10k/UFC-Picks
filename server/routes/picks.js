@@ -212,7 +212,7 @@ router.get('/event/:eventId', auth, async (req, res) => {
       include: [{
         model: User,
         as: 'user',
-        attributes: ['id', 'username', 'firstName', 'lastName']
+        attributes: ['id', 'username']
       }],
       order: [['createdAt', 'ASC']]
     });

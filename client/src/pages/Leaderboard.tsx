@@ -143,15 +143,15 @@ const Leaderboard: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
                         <span className="text-sm font-bold text-white">
-                          {entry.user.firstName.charAt(0)}{entry.user.lastName.charAt(0)}
+                          {entry.user.username.charAt(0).toUpperCase()}
                         </span>
                       </div>
                       <div>
                         <div className="font-medium text-white">
-                          {entry.user.firstName} {entry.user.lastName}
+                          @{entry.user.username}
                         </div>
                         <div className="text-sm text-gray-400">
-                          @{entry.user.username}
+                          User #{entry.user.id}
                         </div>
                       </div>
                     </div>

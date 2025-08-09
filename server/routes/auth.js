@@ -28,13 +28,7 @@ router.post('/register', [
     .withMessage('Please provide a valid email'),
   body('password')
     .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long'),
-  body('firstName')
-    .notEmpty()
-    .withMessage('First name is required'),
-  body('lastName')
-    .notEmpty()
-    .withMessage('Last name is required')
+    .withMessage('Password must be at least 6 characters long')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -45,7 +39,7 @@ router.post('/register', [
       });
     }
 
-    const { username, email, password, firstName, lastName } = req.body;
+    const { username, email, password } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({
@@ -66,9 +60,7 @@ router.post('/register', [
     const user = await User.create({
       username,
       email,
-      password,
-      firstName,
-      lastName
+      password
     });
 
     // Generate token
@@ -81,8 +73,6 @@ router.post('/register', [
         id: user.id,
         username: user.username,
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
         avatar: user.avatar,
         createdAt: user.createdAt,
         stats: user.getStats()
@@ -143,8 +133,6 @@ router.post('/login', [
         id: user.id,
         username: user.username,
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
         avatar: user.avatar,
         createdAt: user.createdAt,
         stats: user.getStats()
@@ -166,8 +154,6 @@ router.get('/me', auth, async (req, res) => {
         id: req.user.id,
         username: req.user.username,
         email: req.user.email,
-        firstName: req.user.firstName,
-        lastName: req.user.lastName,
         avatar: req.user.avatar,
         createdAt: req.user.createdAt,
         stats: req.user.getStats(),
@@ -184,14 +170,6 @@ router.get('/me', auth, async (req, res) => {
 // @desc    Update user profile
 // @access  Private
 router.put('/profile', auth, [
-  body('firstName')
-    .optional()
-    .notEmpty()
-    .withMessage('First name cannot be empty'),
-  body('lastName')
-    .optional()
-    .notEmpty()
-    .withMessage('Last name cannot be empty'),
   body('avatar')
     .optional()
     .isURL()
@@ -206,11 +184,9 @@ router.put('/profile', auth, [
       });
     }
 
-    const { firstName, lastName, avatar } = req.body;
+    const { avatar } = req.body;
     const updateFields = {};
 
-    if (firstName) updateFields.firstName = firstName;
-    if (lastName) updateFields.lastName = lastName;
     if (avatar) updateFields.avatar = avatar;
 
     const user = await User.findByPk(req.user.id);
@@ -226,8 +202,6 @@ router.put('/profile', auth, [
         id: user.id,
         username: user.username,
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
         avatar: user.avatar,
         createdAt: user.createdAt,
         stats: user.getStats()

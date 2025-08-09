@@ -31,14 +31,6 @@ const User = sequelize.define('User', {
       len: [6, 255]
     }
   },
-  firstName: {
-    type: DataTypes.STRING(50),
-    allowNull: false
-  },
-  lastName: {
-    type: DataTypes.STRING(50),
-    allowNull: false
-  },
   avatar: {
     type: DataTypes.STRING,
     allowNull: true
@@ -109,9 +101,9 @@ User.prototype.getAccuracy = function() {
   return ((this.correctPicks / this.totalPicks) * 100).toFixed(1);
 };
 
-// Virtual for full name
-User.prototype.getFullName = function() {
-  return `${this.firstName} ${this.lastName}`;
+// Virtual for display name
+User.prototype.getDisplayName = function() {
+  return `@${this.username}`;
 };
 
 // Get user stats as an object (for API compatibility)
