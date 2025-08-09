@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 
 const Login: React.FC = () => {
   const [formData, setFormData] = useState({
-    email: '',
+    emailOrUsername: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -25,7 +25,7 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.password) {
+    if (!formData.emailOrUsername || !formData.password) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -33,7 +33,7 @@ const Login: React.FC = () => {
     setIsLoading(true);
     
     try {
-      await login(formData.email, formData.password);
+      await login(formData.emailOrUsername, formData.password);
       toast.success('Login successful!');
       navigate('/dashboard');
     } catch (error: any) {
@@ -68,19 +68,19 @@ const Login: React.FC = () => {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300">
-                Email address
+              <label htmlFor="emailOrUsername" className="block text-sm font-medium text-gray-300">
+                Email or Username
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
+                id="emailOrUsername"
+                name="emailOrUsername"
+                type="text"
+                autoComplete="username"
                 required
-                value={formData.email}
+                value={formData.emailOrUsername}
                 onChange={handleChange}
                 className="input-field mt-1"
-                placeholder="Enter your email"
+                placeholder="Enter your email or username"
               />
             </div>
             
