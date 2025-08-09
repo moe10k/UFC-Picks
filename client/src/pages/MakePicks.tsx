@@ -14,24 +14,47 @@ const MakePicks: React.FC = () => {
   const [picks, setPicks] = useState<Pick[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [existingPick, setExistingPick] = useState<any>(null);
 
   useEffect(() => {
-    const fetchEvent = async () => {
+    const fetchEventAndPicks = async () => {
       if (!id) return;
       
       try {
         setIsLoading(true);
+        
+        // Fetch event details
         const { event: eventData } = await eventsAPI.getById(id);
         setEvent(eventData);
         
-        // Initialize picks for each fight
-        const initialPicks: Pick[] = eventData.fights.map((fight: Fight) => ({
-          fightNumber: fight.fightNumber,
-          winner: 'fighter1',
-          method: 'Decision',
-          round: undefined
-        }));
-        setPicks(initialPicks);
+        // Check if user already has picks for this event
+        try {
+          const { picks: userPicks } = await picksAPI.getMyPicks(id);
+          const existingUserPick = userPicks.find((pick: any) => pick.event.id === parseInt(id));
+          
+          if (existingUserPick) {
+            setExistingPick(existingUserPick);
+            setPicks(existingUserPick.picks);
+          } else {
+            // Initialize picks for each fight
+            const initialPicks: Pick[] = eventData.fights.map((fight: Fight) => ({
+              fightNumber: fight.fightNumber,
+              winner: 'fighter1',
+              method: 'Decision',
+              round: undefined
+            }));
+            setPicks(initialPicks);
+          }
+        } catch (error) {
+          // If no picks found, initialize with default picks
+          const initialPicks: Pick[] = eventData.fights.map((fight: Fight) => ({
+            fightNumber: fight.fightNumber,
+            winner: 'fighter1',
+            method: 'Decision',
+            round: undefined
+          }));
+          setPicks(initialPicks);
+        }
       } catch (error: any) {
         console.error('Error fetching event:', error);
         toast.error('Failed to load event details');
@@ -40,7 +63,7 @@ const MakePicks: React.FC = () => {
       }
     };
 
-    fetchEvent();
+    fetchEventAndPicks();
   }, [id]);
 
   const handlePickChange = (fightNumber: number, field: keyof Pick, value: any) => {
@@ -110,10 +133,10 @@ const MakePicks: React.FC = () => {
         picks: picks
       });
       
-      toast.success('Picks submitted successfully!');
+      toast.success(existingPick ? 'Picks updated successfully!' : 'Picks submitted successfully!');
       navigate(`/event/${id}`);
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to submit picks';
+      const message = error.response?.data?.message || (existingPick ? 'Failed to update picks' : 'Failed to submit picks');
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -162,11 +185,19 @@ const MakePicks: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="flex-1">
             <h1 className="text-3xl font-bold text-white mb-2">
-              Make Your Picks
+              {existingPick ? 'Modify Your Picks' : 'Make Your Picks'}
             </h1>
             <h2 className="text-xl text-gray-300 mb-4">
               {event.name}
             </h2>
+            {existingPick && (
+              <div className="flex items-center gap-2 text-blue-400 mb-4">
+                <CheckCircleIcon className="h-5 w-5" />
+                <span className="text-sm">
+                  You have already submitted picks for this event. You can modify them below.
+                </span>
+              </div>
+            )}
             
             <div className="flex items-center gap-2 text-yellow-400 mb-4">
               <ClockIcon className="h-5 w-5" />
@@ -179,7 +210,7 @@ const MakePicks: React.FC = () => {
             {(() => {
               const totalPicks = picks.length;
               const completePicks = picks.filter(pick => 
-                pick.winner && pick.method && (pick.method === 'Decision' || pick.round !== undefined && pick.round !== null)
+                pick.winner && pick.method && (pick.method === 'Decision' || (pick.round !== undefined && pick.round !== null))
               ).length;
               const incompletePicks = totalPicks - completePicks;
               
@@ -207,10 +238,10 @@ const MakePicks: React.FC = () => {
               {isSubmitting ? (
                 <div className="flex items-center">
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Submitting...
+                  {existingPick ? 'Updating...' : 'Submitting...'}
                 </div>
               ) : (
-                'Submit Picks'
+                existingPick ? 'Modify Picks' : 'Submit Picks'
               )}
             </button>
           </div>
@@ -240,7 +271,7 @@ const MakePicks: React.FC = () => {
                       Co-Main
                     </span>
                   )}
-                  {pick && (!pick.winner || !pick.method || (pick.method !== 'Decision' && (pick.round === undefined || pick.round === null))) && (
+                  {pick && ((!pick.winner || !pick.method) || (pick.method !== 'Decision' && (pick.round === undefined || pick.round === null))) && (
                     <span className="px-3 py-1 bg-red-600 rounded-full text-sm font-medium text-white">
                       Incomplete
                     </span>
@@ -387,10 +418,10 @@ const MakePicks: React.FC = () => {
           {isSubmitting ? (
             <div className="flex items-center">
               <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
-              Submitting Picks...
+              {existingPick ? 'Updating Picks...' : 'Submitting Picks...'}
             </div>
           ) : (
-            'Submit All Picks'
+            existingPick ? 'Update All Picks' : 'Submit All Picks'
           )}
         </button>
       </div>

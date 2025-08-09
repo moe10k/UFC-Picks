@@ -76,7 +76,15 @@ router.post('/', auth, [
       where: { user_id: req.user.id, event_id: eventId } 
     });
     if (existingPick && existingPick.isSubmitted) {
-      return res.status(400).json({ message: 'Picks already submitted for this event' });
+      // If picks are already submitted, update them instead
+      existingPick.picks = picks;
+      await existingPick.save();
+      
+      res.json({
+        message: 'Picks updated successfully',
+        pick: existingPick
+      });
+      return;
     }
 
     // Validate that all fight numbers exist in the event
