@@ -2,8 +2,6 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  firstName: string;
-  lastName: string;
   avatar?: string;
   stats: UserStats;
   isAdmin?: boolean;
@@ -89,8 +87,6 @@ export interface UserPick {
   user: string | {
     id: number;
     username: string;
-    firstName: string;
-    lastName: string;
   };
   event: string | Event;
   picks: Pick[];
@@ -108,8 +104,6 @@ export interface LeaderboardEntry {
   user: {
     id: number;
     username: string;
-    firstName: string;
-    lastName: string;
   };
   stats: {
     totalPoints: number;
@@ -145,8 +139,6 @@ export interface EventLeaderboardResponse {
     user: {
       id: number;
       username: string;
-      firstName: string;
-      lastName: string;
     };
     stats: {
       totalPoints: number;
@@ -200,8 +192,6 @@ export interface LeaderboardStats {
   topUsers: Array<{
     rank: number;
     username: string;
-    firstName: string;
-    lastName: string;
     totalPoints: number;
   }>;
 } 

@@ -8,8 +8,6 @@ const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
     avatar: user?.avatar || ''
   });
 
@@ -23,17 +21,10 @@ const Profile: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.firstName || !formData.lastName) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
     setIsLoading(true);
     
     try {
       await updateProfile({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
         avatar: formData.avatar || undefined
       });
       
@@ -49,8 +40,6 @@ const Profile: React.FC = () => {
 
   const handleCancel = () => {
     setFormData({
-      firstName: user?.firstName || '',
-      lastName: user?.lastName || '',
       avatar: user?.avatar || ''
     });
     setIsEditing(false);
@@ -75,7 +64,7 @@ const Profile: React.FC = () => {
               {user.avatar ? (
                 <img 
                   src={user.avatar} 
-                  alt={`${user.firstName} ${user.lastName}`}
+                  alt={`@${user.username}`}
                   className="w-full h-full object-cover rounded-full"
                 />
               ) : (
@@ -85,12 +74,9 @@ const Profile: React.FC = () => {
             
             <div>
               <h1 className="text-3xl font-bold text-white mb-2">
-                {user.firstName} {user.lastName}
+                @{user.username}
               </h1>
               <p className="text-gray-400 text-lg">
-                @{user.username}
-              </p>
-              <p className="text-gray-500">
                 {user.email}
               </p>
             </div>
@@ -114,38 +100,6 @@ const Profile: React.FC = () => {
           <h2 className="text-xl font-bold text-white mb-6">Edit Profile</h2>
           
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-300 mb-2">
-                  First Name
-                </label>
-                <input
-                  id="firstName"
-                  name="firstName"
-                  type="text"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  className="input-field"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-300 mb-2">
-                  Last Name
-                </label>
-                <input
-                  id="lastName"
-                  name="lastName"
-                  type="text"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  className="input-field"
-                  required
-                />
-              </div>
-            </div>
-            
             <div>
               <label htmlFor="avatar" className="block text-sm font-medium text-gray-300 mb-2">
                 Avatar URL (Optional)

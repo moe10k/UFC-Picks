@@ -10,8 +10,6 @@ const Register: React.FC = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    firstName: '',
-    lastName: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -28,7 +26,7 @@ const Register: React.FC = () => {
   };
 
   const validateForm = () => {
-    if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword || !formData.firstName || !formData.lastName) {
+    if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword) {
       toast.error('Please fill in all fields');
       return false;
     }
@@ -75,8 +73,6 @@ const Register: React.FC = () => {
         username: formData.username,
         email: formData.email,
         password: formData.password,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
       });
       toast.success('Registration successful!');
       navigate('/dashboard');
@@ -111,42 +107,6 @@ const Register: React.FC = () => {
         
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-300">
-                  First Name
-                </label>
-                <input
-                  id="firstName"
-                  name="firstName"
-                  type="text"
-                  autoComplete="given-name"
-                  required
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  className="input-field mt-1"
-                  placeholder="First name"
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-300">
-                  Last Name
-                </label>
-                <input
-                  id="lastName"
-                  name="lastName"
-                  type="text"
-                  autoComplete="family-name"
-                  required
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  className="input-field mt-1"
-                  placeholder="Last name"
-                />
-              </div>
-            </div>
-
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-300">
                 Username

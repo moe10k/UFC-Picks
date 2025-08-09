@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
     // Get users with their stats, sorted by total points
     const { count, rows: users } = await User.findAndCountAll({
       where: { isActive: true },
-      attributes: ['id', 'username', 'firstName', 'lastName', 'totalPicks', 'correctPicks', 'totalPoints', 'eventsParticipated', 'bestEventScore', 'currentStreak', 'longestStreak'],
+      attributes: ['id', 'username', 'totalPicks', 'correctPicks', 'totalPoints', 'eventsParticipated', 'bestEventScore', 'currentStreak', 'longestStreak'],
       order: [['totalPoints', 'DESC'], ['correctPicks', 'DESC']],
       limit: parseInt(limit),
       offset: (parseInt(page) - 1) * parseInt(limit)
@@ -27,9 +27,7 @@ router.get('/', async (req, res) => {
       rank: (parseInt(page) - 1) * parseInt(limit) + index + 1,
       user: {
         id: user.id,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName
+        username: user.username
       },
       stats: {
         totalPoints: user.totalPoints,
@@ -84,7 +82,7 @@ router.get('/event/:eventId', async (req, res) => {
       include: [{
         model: User,
         as: 'user',
-        attributes: ['id', 'username', 'firstName', 'lastName']
+        attributes: ['id', 'username']
       }],
       order: [['totalPoints', 'DESC'], ['correctPicks', 'DESC']],
       limit: parseInt(limit),
@@ -96,9 +94,7 @@ router.get('/event/:eventId', async (req, res) => {
       rank: (parseInt(page) - 1) * parseInt(limit) + index + 1,
       user: {
         id: pick.user.id,
-        username: pick.user.username,
-        firstName: pick.user.firstName,
-        lastName: pick.user.lastName
+        username: pick.user.username
       },
       stats: {
         totalPoints: pick.totalPoints,
@@ -173,9 +169,7 @@ router.get('/user/:userId', async (req, res) => {
     res.json({
       user: {
         id: user.id,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName
+        username: user.username
       },
       stats: {
         globalRank: globalRank + 1,
@@ -212,18 +206,18 @@ router.get('/stats', async (req, res) => {
     // Get total number of picks submitted
     const totalPicks = await Pick.count({ where: { isSubmitted: true } });
 
-          // Get average points per user
-      const avgPointsResult = await User.findAll({
-        where: { isActive: true },
-        attributes: [[fn('AVG', col('totalPoints')), 'avgPoints']],
-        raw: true
-      });
-      const avgPoints = avgPointsResult.length > 0 ? Math.round(avgPointsResult[0].avgPoints || 0) : 0;
+    // Get average points per user
+    const avgPointsResult = await User.findAll({
+      where: { isActive: true },
+      attributes: [[fn('AVG', col('totalPoints')), 'avgPoints']],
+      raw: true
+    });
+    const avgPoints = avgPointsResult.length > 0 ? Math.round(avgPointsResult[0].avgPoints || 0) : 0;
 
     // Get top 3 users
     const topUsers = await User.findAll({
       where: { isActive: true },
-      attributes: ['id', 'username', 'firstName', 'lastName', 'totalPoints'],
+      attributes: ['id', 'username', 'totalPoints'],
       order: [['totalPoints', 'DESC']],
       limit: 3
     });
@@ -236,8 +230,6 @@ router.get('/stats', async (req, res) => {
       topUsers: topUsers.map((user, index) => ({
         rank: index + 1,
         username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
         totalPoints: user.totalPoints
       }))
     });

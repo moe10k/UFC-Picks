@@ -93,13 +93,9 @@ interface AuthContextType extends AuthState {
     username: string;
     email: string;
     password: string;
-    firstName: string;
-    lastName: string;
   }) => Promise<void>;
   logout: () => void;
   updateProfile: (profileData: {
-    firstName?: string;
-    lastName?: string;
     avatar?: string;
   }) => Promise<void>;
 }
@@ -163,8 +159,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     username: string;
     email: string;
     password: string;
-    firstName: string;
-    lastName: string;
   }) => {
     try {
       dispatch({ type: 'LOGIN_START' });
@@ -188,8 +182,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const updateProfile = async (profileData: {
-    firstName?: string;
-    lastName?: string;
     avatar?: string;
   }) => {
     try {

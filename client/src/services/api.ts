@@ -56,8 +56,6 @@ export const authAPI = {
     username: string;
     email: string;
     password: string;
-    firstName: string;
-    lastName: string;
   }): Promise<AuthResponse> => {
     const response = await api.post('/auth/register', userData);
     return response.data;
@@ -74,8 +72,6 @@ export const authAPI = {
   },
 
   updateProfile: async (profileData: {
-    firstName?: string;
-    lastName?: string;
     avatar?: string;
   }): Promise<AuthResponse> => {
     const response = await api.put('/auth/profile', profileData);
