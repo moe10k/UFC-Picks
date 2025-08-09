@@ -15,6 +15,7 @@ import EventDetails from './pages/EventDetails';
 import MakePicks from './pages/MakePicks';
 import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
+import Security from './pages/Security';
 import MyPicks from './pages/MyPicks';
 
 // Admin Pages
@@ -109,6 +110,11 @@ const AppContent: React.FC = () => {
             <Route path="/profile" element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/security" element={
+              <ProtectedRoute>
+                <Security />
               </ProtectedRoute>
             } />
             <Route path="/my-picks" element={

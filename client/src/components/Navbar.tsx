@@ -13,7 +13,9 @@ import {
   ChevronDownIcon,
   CalendarIcon,
   ChartBarIcon,
-  PencilIcon
+  PencilIcon,
+  ShieldCheckIcon,
+  EyeIcon
 } from '@heroicons/react/24/outline';
 
 const Navbar: React.FC = () => {
@@ -22,28 +24,33 @@ const Navbar: React.FC = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAdminDropdownOpen, setIsAdminDropdownOpen] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const adminDropdownRef = useRef<HTMLDivElement>(null);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (adminDropdownRef.current && !adminDropdownRef.current.contains(event.target as Node)) {
         setIsAdminDropdownOpen(false);
       }
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+        setIsUserDropdownOpen(false);
+      }
     };
 
-    if (isAdminDropdownOpen) {
+    if (isAdminDropdownOpen || isUserDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
       };
     }
-  }, [isAdminDropdownOpen]);
+  }, [isAdminDropdownOpen, isUserDropdownOpen]);
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
@@ -56,6 +63,11 @@ const Navbar: React.FC = () => {
     { name: 'Create Event', href: '/admin/events/create', icon: PlusIcon },
     { name: 'Manage Events', href: '/admin/events', icon: CalendarIcon },
     { name: 'Update Results', href: '/admin/results', icon: ChartBarIcon },
+  ];
+
+  const userOptions = [
+    { name: 'View Profile', href: '/profile', icon: EyeIcon },
+    { name: 'Security Settings', href: '/security', icon: ShieldCheckIcon },
   ];
 
   if (!isAuthenticated) {
@@ -140,33 +152,58 @@ const Navbar: React.FC = () => {
 
           {/* User Menu */}
           <div className="hidden md:flex items-center space-x-4">
-            <div className="flex items-center space-x-3">
-              <div className="text-right">
-                <p className="text-sm font-medium text-white">
-                  @{user?.username}
-                </p>
-                <p className="text-xs text-gray-400">{user?.email}</p>
-              </div>
-              <div className="w-8 h-8 bg-ufc-red rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-bold">
-                  {user?.username?.charAt(0).toUpperCase()}
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Link
-                to="/profile"
-                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Profile
-              </Link>
+            <div className="relative" ref={userDropdownRef}>
               <button
-                onClick={handleLogout}
-                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center"
+                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
               >
-                <ArrowRightOnRectangleIcon className="w-5 h-5 mr-1" />
-                Logout
+                <div className="text-right">
+                  <p className="text-sm font-medium text-white">
+                    @{user?.username}
+                  </p>
+                  <p className="text-xs text-gray-400">{user?.email}</p>
+                </div>
+                <div className="w-8 h-8 bg-ufc-red rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">
+                    {user?.username?.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <ChevronDownIcon className="w-4 h-4 text-gray-400" />
               </button>
+              
+              {isUserDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-600">
+                  {userOptions.map((option) => {
+                    const isActive = location.pathname === option.href;
+                    return (
+                      <Link
+                        key={option.name}
+                        to={option.href}
+                        className={`flex items-center px-4 py-2 text-sm transition-colors ${
+                          isActive
+                            ? 'bg-ufc-red text-white'
+                            : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                        }`}
+                        onClick={() => setIsUserDropdownOpen(false)}
+                      >
+                        <option.icon className="w-4 h-4 mr-3" />
+                        {option.name}
+                      </Link>
+                    );
+                  })}
+                  <div className="border-t border-gray-600 my-1"></div>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setIsUserDropdownOpen(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                  >
+                    <ArrowRightOnRectangleIcon className="w-4 h-4 mr-3" />
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
