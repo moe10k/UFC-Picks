@@ -10,6 +10,12 @@ const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [upcomingEvent, setUpcomingEvent] = useState<Event | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [timeRemaining, setTimeRemaining] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+  }>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
     const fetchUpcomingEvent = async () => {
@@ -27,6 +33,32 @@ const Dashboard: React.FC = () => {
 
     fetchUpcomingEvent();
   }, []);
+
+  useEffect(() => {
+    if (!upcomingEvent?.pickDeadline) return;
+
+    const updateCountdown = () => {
+      const now = new Date().getTime();
+      const deadline = new Date(upcomingEvent.pickDeadline).getTime();
+      const difference = deadline - now;
+
+      if (difference > 0) {
+        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+        setTimeRemaining({ days, hours, minutes, seconds });
+      } else {
+        setTimeRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(interval);
+  }, [upcomingEvent?.pickDeadline]);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -72,9 +104,43 @@ const Dashboard: React.FC = () => {
           </p>
         </div>
 
+
+        {/* Pick Deadline Countdown */}
+        <div className="card text-center">
+          <h3 className="text-xl font-semibold text-white mb-4">⏰ Picks Lock In</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="countdown-item">
+              <div className="text-3xl font-bold text-ufc-red">{timeRemaining.days}</div>
+              <div className="text-sm text-gray-400">Days</div>
+            </div>
+            <div className="countdown-item">
+              <div className="text-3xl font-bold text-ufc-red">{timeRemaining.hours.toString().padStart(2, '0')}</div>
+              <div className="text-sm text-gray-400">Hours</div>
+            </div>
+            <div className="countdown-item">
+              <div className="text-3xl font-bold text-ufc-red">{timeRemaining.minutes.toString().padStart(2, '0')}</div>
+              <div className="text-sm text-gray-400">Minutes</div>
+            </div>
+            <div className="countdown-item">
+              <div className="text-3xl font-bold text-ufc-red">{timeRemaining.seconds.toString().padStart(2, '0')}</div>
+              <div className="text-sm text-gray-400">Seconds</div>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA Button */}
+        <div className="text-center mt-8">
+          <Link
+            to={`/event/${upcomingEvent.id}/picks`}
+            className="btn-primary text-lg px-8 py-3 inline-block"
+          >
+            Make Your Picks
+          </Link>
+        </div>
+
         {/* Main Card Fights */}
         <div className="space-y-4">
-          <h3 className="text-xl font-semibold text-white mb-4">Main Card Fights</h3>
+        <h3 className="text-xl font-semibold text-white mb-4">Main Card Fights</h3>
           {mainCardFights.map((fight) => (
             <div key={fight.fightNumber} className="fight-card">
               <div className="flex justify-between items-center mb-4">
@@ -144,37 +210,10 @@ const Dashboard: React.FC = () => {
           ))}
         </div>
 
-        {/* CTA Button */}
-        <div className="text-center mt-8">
-          <Link
-            to={`/event/${upcomingEvent.id}/picks`}
-            className="btn-primary text-lg px-8 py-3 inline-block"
-          >
-            Make Your Picks
-          </Link>
-        </div>
+        
       </div>
 
-      {/* User Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card text-center">
-          <h3 className="text-lg font-semibold text-white mb-2">Total Points</h3>
-          <p className="text-3xl font-bold text-ufc-gold">{user?.stats.totalPoints || 0}</p>
-        </div>
-        <div className="card text-center">
-          <h3 className="text-lg font-semibold text-white mb-2">Accuracy</h3>
-          <p className="text-3xl font-bold text-ufc-gold">
-            {user?.stats.totalPicks ? 
-              `${((user.stats.correctPicks / user.stats.totalPicks) * 100).toFixed(1)}%` : 
-              '0%'
-            }
-          </p>
-        </div>
-        <div className="card text-center">
-          <h3 className="text-lg font-semibold text-white mb-2">Events Participated</h3>
-          <p className="text-3xl font-bold text-ufc-gold">{user?.stats.eventsParticipated || 0}</p>
-        </div>
-      </div>
+      
     </div>
   );
 };

@@ -67,7 +67,7 @@ const AppContent: React.FC = () => {
 
   return (
     <Router>
-      <div className="min-h-screen bg-ufc-dark">
+      <div className="min-h-screen bg-black/60">
         <Navbar />
         <main className="container mx-auto px-4 py-8">
           <Routes>

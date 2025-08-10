@@ -11,7 +11,7 @@ const router = express.Router();
 // Generate JWT token
 const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '7d'
+    expiresIn: process.env.JWT_EXPIRE || '24h'
   });
 };
 
@@ -37,8 +37,12 @@ router.post('/register', [
     .normalizeEmail()
     .withMessage('Please provide a valid email'),
   body('password')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long')
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters long')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character')
+    .isLength({ max: 128 })
+    .withMessage('Password must not exceed 128 characters'),
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -315,8 +319,12 @@ router.post('/change-password', auth, [
     .notEmpty()
     .withMessage('Current password is required'),
   body('newPassword')
-    .isLength({ min: 6 })
-    .withMessage('New password must be at least 6 characters long')
+    .isLength({ min: 8 })
+    .withMessage('New password must be at least 8 characters long')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .withMessage('New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character')
+    .isLength({ max: 128 })
+    .withMessage('New password must not exceed 128 characters')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);

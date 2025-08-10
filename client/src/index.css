@@ -8,7 +8,11 @@
   }
   
   body {
-    @apply bg-ufc-dark text-white;
+    background-image: url('../public/ufc-background.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
 }
 
@@ -55,6 +59,14 @@
   
   .glass-effect {
     @apply backdrop-blur-sm bg-white/10 border border-white/20;
+  }
+  
+  .login-backdrop {
+    @apply backdrop-blur-md bg-black/40 rounded-2xl border border-white/10 shadow-2xl;
+  }
+  
+  .form-input-enhanced {
+    @apply w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-ufc-red focus:border-ufc-red transition-all duration-200;
   }
 }
 
