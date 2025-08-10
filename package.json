@@ -27,7 +27,7 @@
     "react",
     "nodejs",
     "express",
-    "sqlite"
+    "mysql"
   ],
   "author": "Your Name",
   "license": "MIT",

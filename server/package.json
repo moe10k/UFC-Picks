@@ -7,8 +7,12 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "test": "jest",
-    "seed": "node -e \"require('./utils/seedData.js')()\"",
-    "migrate:ufc319": "node utils/migrateUFC319.js"
+
+    "seed": "node seed-database.js",
+    "db:status": "node manage-database.js status",
+    "db:seed": "node manage-database.js seed",
+    "db:reset": "node manage-database.js reset",
+    "db:create-admin": "node manage-database.js create-admin"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -20,14 +24,12 @@
     "helmet": "^6.1.5",
     "jsonwebtoken": "^9.0.0",
     "morgan": "^1.10.0",
-    "pg": "^8.11.3",
-    "pg-hstore": "^2.3.4",
+    "mysql2": "^3.14.3",
     "sequelize": "^6.31.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "nodemon": "^3.1.10",
-    "sqlite3": "^5.1.6"
+    "nodemon": "^3.1.10"
   },
   "engines": {
     "node": "18.x"

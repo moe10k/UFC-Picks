@@ -41,7 +41,7 @@ A full-stack web application for making and tracking UFC fight predictions. User
 
 ### Backend
 - **Node.js** with Express.js framework
-- **Sequelize ORM** with SQLite/PostgreSQL database support
+- **Sequelize ORM** with MySQL database support
 - **JWT** for secure authentication
 - **bcryptjs** for password hashing
 - **Express Rate Limiting** for API protection
@@ -101,8 +101,12 @@ A full-stack web application for making and tracking UFC fight predictions. User
    # CORS Configuration (for development)
    CORS_ORIGIN=http://localhost:3000
    
-   # Database Configuration (optional)
-   DATABASE_PATH=database.sqlite
+   # MySQL Database Configuration
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_USER=root
+   DB_PASSWORD=your_mysql_password_here
+   DB_NAME=ufc_picks
    
    # Security (optional, uses defaults if not set)
    RATE_LIMIT_AUTH=5
@@ -112,7 +116,15 @@ A full-stack web application for making and tracking UFC fight predictions. User
    LOG_LEVEL=info
    ```
 
-4. **Initialize the database**
+4. **Set up MySQL database**
+   ```bash
+   # Create MySQL database
+   mysql -u root -p
+   CREATE DATABASE ufc_picks;
+   exit;
+   ```
+
+5. **Initialize the database**
    ```bash
    cd server
    npm run seed
@@ -205,10 +217,34 @@ A full-stack web application for making and tracking UFC fight predictions. User
 - Fighter profiles and statistics
 - Match history and performance data
 
+## 🛠️ Database Management
+
+The application includes comprehensive database management tools:
+
+### Available Commands
+```bash
+# Check database status
+npm run db:status
+
+# Seed the database with sample data
+npm run db:seed
+
+# Reset the database (⚠️ WARNING: This will delete all data)
+npm run db:reset
+
+# Create a new admin user
+npm run db:create-admin
+```
+
+### Database Utilities
+- **`manage-database.js`**: Comprehensive CLI for database operations
+- **`seed-database.js`**: Dedicated script for populating sample data
+- **Automatic synchronization**: Database tables are created automatically on startup
+
 ## 🎯 Sample Data
 
 The application comes with pre-loaded sample data including:
-- **Admin User**: `admin@ufcpicks.com` / `admin123`
+- **Admin User**: `admin@ufcpicks.com` / `[PASSWORD CHANGED - was admin123]` but password has been changed
 - **Sample UFC Events**: Multiple events with complete fight cards
 - **Fighter Database**: Comprehensive fighter profiles
 - **Test Data**: Sample picks and results for development
@@ -253,6 +289,13 @@ heroku create your-ufc-picks-app
 heroku config:set NODE_ENV=production
 heroku config:set JWT_SECRET=your-production-secret
 
+# Set MySQL database configuration
+heroku config:set DB_HOST=your-mysql-host
+heroku config:set DB_PORT=3306
+heroku config:set DB_USER=your-mysql-user
+heroku config:set DB_PASSWORD=your-mysql-password
+heroku config:set DB_NAME=your-mysql-database
+
 # Deploy
 git push heroku main
 ```
@@ -262,7 +305,11 @@ git push heroku main
 NODE_ENV=production
 JWT_SECRET=your-super-secret-production-key
 CORS_ORIGIN=https://yourdomain.com
-DATABASE_URL=your-database-connection-string
+DB_HOST=your-mysql-host
+DB_PORT=3306
+DB_USER=your-mysql-user
+DB_PASSWORD=your-mysql-password
+DB_NAME=your-mysql-database
 ```
 
 ## 🤝 Contributing
