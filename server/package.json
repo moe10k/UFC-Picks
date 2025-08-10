@@ -8,8 +8,7 @@
     "dev": "nodemon index.js",
     "test": "jest",
     "seed": "node -e \"require('./utils/seedData.js')()\"",
-    "setup": "node utils/productionSetup.js",
-    "migrate:sqlite-to-postgres": "node utils/migrateToPostgres.js"
+    "migrate:ufc319": "node utils/migrateUFC319.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

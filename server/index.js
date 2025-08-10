@@ -7,6 +7,7 @@ const path = require('path');
 require('dotenv').config();
 
 const { sequelize, testConnection } = require('./config/database');
+const { migrateUFC319 } = require('./utils/migrateUFC319');
 const authRoutes = require('./routes/auth');
 const eventRoutes = require('./routes/events');
 const pickRoutes = require('./routes/picks');
@@ -77,6 +78,13 @@ const initializeDatabase = async () => {
     await testConnection();
     await sequelize.sync({ force: false }); // Set force: true to recreate tables
     console.log('✅ Database synchronized successfully');
+    
+    // Run UFC 319 migration in production
+    if (process.env.NODE_ENV === 'production') {
+      console.log('🔄 Running UFC 319 migration...');
+      await migrateUFC319();
+      console.log('✅ UFC 319 migration completed');
+    }
   } catch (error) {
     console.error('❌ Database initialization error:', error);
     if (process.env.NODE_ENV === 'production') {
@@ -103,29 +111,76 @@ app.get('/api/test-db', async (req, res) => {
   try {
     // Test database connection
     await sequelize.authenticate();
-    
+
     // Check if users table exists
     const [results] = await sequelize.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users'");
-    
+
     // Check table structure
     let tableStructure = null;
     if (results.length > 0) {
       const [columns] = await sequelize.query("SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position");
       tableStructure = columns;
     }
-    
-    res.json({ 
-      status: 'OK', 
+
+    res.json({
+      status: 'OK',
       message: 'Database connection successful',
       tables: results.map(r => r.table_name),
       usersTableStructure: tableStructure
     });
   } catch (error) {
     console.error('Database test error:', error);
-    res.status(500).json({ 
-      status: 'ERROR', 
+    res.status(500).json({
+      status: 'ERROR',
       message: 'Database connection failed',
-      error: error.message 
+      error: error.message
+    });
+  }
+});
+
+// Temporary admin creation endpoint (REMOVE AFTER USE)
+app.post('/api/create-admin', async (req, res) => {
+  try {
+    // Check if admin user already exists
+    const [adminCheck] = await sequelize.query("SELECT id, username, email, is_admin, is_owner FROM users WHERE email = 'admin@ufcpicks.com'");
+    
+    if (adminCheck.length > 0) {
+      return res.json({
+        status: 'EXISTS',
+        message: 'Admin user already exists',
+        user: adminCheck[0]
+      });
+    }
+    
+    // Create admin user with hashed password
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash('admin123', 12);
+    
+    const [newUser] = await sequelize.query(`
+      INSERT INTO users (username, email, password, is_admin, is_owner, is_active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+      RETURNING id, username, email, is_admin, is_owner
+    `, {
+      replacements: ['admin', 'admin@ufcpicks.com', hashedPassword, true, true, true],
+      type: sequelize.QueryTypes.INSERT
+    });
+    
+    res.json({
+      status: 'CREATED',
+      message: 'Admin user created successfully',
+      user: newUser[0],
+      credentials: {
+        email: 'admin@ufcpicks.com',
+        password: 'admin123'
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error creating admin user:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Failed to create admin user',
+      error: error.message
     });
   }
 });
@@ -144,13 +199,13 @@ if (process.env.NODE_ENV === 'production') {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  
+
   // Never expose error details in production
-  const errorMessage = process.env.NODE_ENV === 'development' 
-    ? err.message 
+  const errorMessage = process.env.NODE_ENV === 'development'
+    ? err.message
     : 'Something went wrong!';
-    
-  res.status(500).json({ 
+
+  res.status(500).json({
     message: errorMessage,
     // Only include stack trace in development
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
