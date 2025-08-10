@@ -9,7 +9,14 @@ const auth = async (req, res, next) => {
       return res.status(401).json({ message: 'No token, authorization denied' });
     }
 
+    // Verify token and check expiration
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Check if token is expired
+    if (decoded.exp && Date.now() >= decoded.exp * 1000) {
+      return res.status(401).json({ message: 'Token has expired' });
+    }
+    
     const user = await User.findByPk(decoded.userId, {
       attributes: { exclude: ['password'] }
     });
@@ -25,6 +32,12 @@ const auth = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token has expired' });
+    } else if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Token is not valid' });
+    }
+    
     console.error('Auth middleware error:', error);
     res.status(401).json({ message: 'Token is not valid' });
   }

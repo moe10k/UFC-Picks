@@ -1,10 +1,56 @@
 const express = require('express');
+const { body, validationResult } = require('express-validator');
 const { Op } = require('sequelize');
 const Event = require('../models/Event');
 const { auth, adminAuth } = require('../middleware/auth');
 const Pick = require('../models/Pick'); // Added missing import for Pick
 
 const router = express.Router();
+
+// Input validation middleware
+const validateEventInput = [
+  body('name')
+    .trim()
+    .isLength({ min: 1, max: 200 })
+    .withMessage('Event name must be between 1 and 200 characters')
+    .escape(),
+  body('date')
+    .isISO8601()
+    .withMessage('Date must be a valid ISO 8601 date'),
+  body('venueName')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Venue name must not exceed 100 characters')
+    .escape(),
+  body('venueCity')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Venue city must not exceed 100 characters')
+    .escape(),
+  body('venueState')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Venue state must not exceed 100 characters')
+    .escape(),
+  body('venueCountry')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Venue country must not exceed 100 characters')
+    .escape(),
+  body('description')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('Description must not exceed 1000 characters')
+    .escape(),
+  body('pickDeadline')
+    .isISO8601()
+    .withMessage('Pick deadline must be a valid ISO 8601 date')
+];
 
 // Helper function to transform event data for frontend
 const transformEventForFrontend = (event) => {
@@ -102,8 +148,16 @@ router.get('/:id', async (req, res) => {
 // @route   POST /api/events
 // @desc    Create a new event (Admin only)
 // @access  Private/Admin
-router.post('/', adminAuth, async (req, res) => {
+router.post('/', adminAuth, validateEventInput, async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        message: 'Validation errors',
+        errors: errors.array()
+      });
+    }
+
     const {
       name,
       date,
@@ -144,8 +198,16 @@ router.post('/', adminAuth, async (req, res) => {
 // @route   PUT /api/events/:id
 // @desc    Update an event (Admin only)
 // @access  Private/Admin
-router.put('/:id', adminAuth, async (req, res) => {
+router.put('/:id', adminAuth, validateEventInput, async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        message: 'Validation errors',
+        errors: errors.array()
+      });
+    }
+
     const event = await Event.findByPk(req.params.id);
     
     if (!event) {
