@@ -21,7 +21,7 @@ app.set('trust proxy', 1);
 // Rate limiting middleware
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 requests per windowMs for auth endpoints
+  max: 20, // limit each IP to 20 requests per windowMs for auth endpoints (increased from 5 for development)
   message: 'Too many authentication attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -67,9 +67,14 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Apply rate limiting
-app.use('/api/auth', authLimiter);
-app.use('/api', generalLimiter);
+// Apply rate limiting (only in production)
+if (process.env.NODE_ENV === 'production') {
+  app.use('/api/auth', authLimiter);
+  app.use('/api', generalLimiter);
+  console.log('🔒 Rate limiting enabled (production mode)');
+} else {
+  console.log('🚀 Rate limiting disabled (development mode)');
+}
 
 // Database connection and sync
 const initializeDatabase = async () => {
