@@ -7,6 +7,7 @@ const path = require('path');
 require('dotenv').config();
 
 const { sequelize, testConnection } = require('./config/database');
+const { migrateUFC319 } = require('./utils/migrateUFC319');
 const authRoutes = require('./routes/auth');
 const eventRoutes = require('./routes/events');
 const pickRoutes = require('./routes/picks');
@@ -77,6 +78,13 @@ const initializeDatabase = async () => {
     await testConnection();
     await sequelize.sync({ force: false }); // Set force: true to recreate tables
     console.log('✅ Database synchronized successfully');
+    
+    // Run UFC 319 migration in production
+    if (process.env.NODE_ENV === 'production') {
+      console.log('🔄 Running UFC 319 migration...');
+      await migrateUFC319();
+      console.log('✅ UFC 319 migration completed');
+    }
   } catch (error) {
     console.error('❌ Database initialization error:', error);
     if (process.env.NODE_ENV === 'production') {
