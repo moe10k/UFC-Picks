@@ -135,7 +135,7 @@ app.post('/api/create-admin', async (req, res) => {
   try {
     // Check if admin user already exists
     const [adminCheck] = await sequelize.query("SELECT id, username, email, is_admin, is_owner FROM users WHERE email = 'admin@ufcpicks.com'");
-
+    
     if (adminCheck.length > 0) {
       return res.json({
         status: 'EXISTS',
@@ -143,17 +143,20 @@ app.post('/api/create-admin', async (req, res) => {
         user: adminCheck[0]
       });
     }
-
+    
     // Create admin user with hashed password
     const bcrypt = require('bcryptjs');
     const hashedPassword = await bcrypt.hash('admin123', 12);
-
+    
     const [newUser] = await sequelize.query(`
       INSERT INTO users (username, email, password, is_admin, is_owner, is_active, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+      VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
       RETURNING id, username, email, is_admin, is_owner
-    `, ['admin', 'admin@ufcpicks.com', hashedPassword, true, true, true]);
-
+    `, {
+      replacements: ['admin', 'admin@ufcpicks.com', hashedPassword, true, true, true],
+      type: sequelize.QueryTypes.INSERT
+    });
+    
     res.json({
       status: 'CREATED',
       message: 'Admin user created successfully',
@@ -163,7 +166,7 @@ app.post('/api/create-admin', async (req, res) => {
         password: 'admin123'
       }
     });
-
+    
   } catch (error) {
     console.error('Error creating admin user:', error);
     res.status(500).json({
