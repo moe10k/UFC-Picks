@@ -103,29 +103,73 @@ app.get('/api/test-db', async (req, res) => {
   try {
     // Test database connection
     await sequelize.authenticate();
-    
+
     // Check if users table exists
     const [results] = await sequelize.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users'");
-    
+
     // Check table structure
     let tableStructure = null;
     if (results.length > 0) {
       const [columns] = await sequelize.query("SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position");
       tableStructure = columns;
     }
-    
-    res.json({ 
-      status: 'OK', 
+
+    res.json({
+      status: 'OK',
       message: 'Database connection successful',
       tables: results.map(r => r.table_name),
       usersTableStructure: tableStructure
     });
   } catch (error) {
     console.error('Database test error:', error);
-    res.status(500).json({ 
-      status: 'ERROR', 
+    res.status(500).json({
+      status: 'ERROR',
       message: 'Database connection failed',
-      error: error.message 
+      error: error.message
+    });
+  }
+});
+
+// Temporary admin creation endpoint (REMOVE AFTER USE)
+app.post('/api/create-admin', async (req, res) => {
+  try {
+    // Check if admin user already exists
+    const [adminCheck] = await sequelize.query("SELECT id, username, email, is_admin, is_owner FROM users WHERE email = 'admin@ufcpicks.com'");
+
+    if (adminCheck.length > 0) {
+      return res.json({
+        status: 'EXISTS',
+        message: 'Admin user already exists',
+        user: adminCheck[0]
+      });
+    }
+
+    // Create admin user with hashed password
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash('admin123', 12);
+
+    const [newUser] = await sequelize.query(`
+      INSERT INTO users (username, email, password, is_admin, is_owner, is_active, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+      RETURNING id, username, email, is_admin, is_owner
+    `, ['admin', 'admin@ufcpicks.com', hashedPassword, true, true, true]);
+
+    res.json({
+      status: 'CREATED',
+      message: 'Admin user created successfully',
+      user: newUser[0],
+      credentials: {
+        email: 'admin@ufcpicks.com',
+        password: 'admin123'
+      }
+    });
+
+  } catch (error) {
+    console.error('Error creating admin user:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Failed to create admin user',
+      error: error.message
     });
   }
 });
@@ -144,13 +188,13 @@ if (process.env.NODE_ENV === 'production') {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  
+
   // Never expose error details in production
-  const errorMessage = process.env.NODE_ENV === 'development' 
-    ? err.message 
+  const errorMessage = process.env.NODE_ENV === 'development'
+    ? err.message
     : 'Something went wrong!';
-    
-  res.status(500).json({ 
+
+  res.status(500).json({
     message: errorMessage,
     // Only include stack trace in development
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
