@@ -4,6 +4,13 @@ const path = require('path');
 let sequelize;
 
 if (process.env.NODE_ENV === 'production') {
+  // Check if DATABASE_URL is available
+  if (!process.env.DATABASE_URL) {
+    console.error('❌ DATABASE_URL is not set in production environment');
+    console.error('💡 Please add PostgreSQL addon: heroku addons:create heroku-postgresql:mini');
+    process.exit(1);
+  }
+
   // PostgreSQL configuration for production (Heroku)
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
