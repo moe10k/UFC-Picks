@@ -15,6 +15,9 @@ const leaderboardRoutes = require('./routes/leaderboard');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust proxy for Heroku (important for rate limiting and IP detection)
+app.set('trust proxy', 1);
+
 // Rate limiting middleware
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -22,6 +25,10 @@ const authLimiter = rateLimit({
   message: 'Too many authentication attempts, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  // Use X-Forwarded-For header for IP detection on Heroku
+  keyGenerator: (req) => {
+    return req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
+  }
 });
 
 const generalLimiter = rateLimit({
@@ -30,6 +37,10 @@ const generalLimiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  // Use X-Forwarded-For header for IP detection on Heroku
+  keyGenerator: (req) => {
+    return req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown';
+  }
 });
 
 // Middleware
@@ -50,7 +61,7 @@ app.use(helmet({
 }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || (process.env.NODE_ENV === 'production' ? false : 'http://localhost:3000'),
+  origin: process.env.CORS_ORIGIN || (process.env.NODE_ENV === 'production' ? true : 'http://localhost:3000'),
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -85,6 +96,38 @@ app.use('/api/leaderboard', leaderboardRoutes);
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'UFC Picks API is running' });
+});
+
+// Database test endpoint
+app.get('/api/test-db', async (req, res) => {
+  try {
+    // Test database connection
+    await sequelize.authenticate();
+    
+    // Check if users table exists
+    const [results] = await sequelize.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users'");
+    
+    // Check table structure
+    let tableStructure = null;
+    if (results.length > 0) {
+      const [columns] = await sequelize.query("SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position");
+      tableStructure = columns;
+    }
+    
+    res.json({ 
+      status: 'OK', 
+      message: 'Database connection successful',
+      tables: results.map(r => r.table_name),
+      usersTableStructure: tableStructure
+    });
+  } catch (error) {
+    console.error('Database test error:', error);
+    res.status(500).json({ 
+      status: 'ERROR', 
+      message: 'Database connection failed',
+      error: error.message 
+    });
+  }
 });
 
 // Serve static files from the React build in production

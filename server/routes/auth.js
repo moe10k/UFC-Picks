@@ -47,6 +47,8 @@ router.post('/register', [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
+      console.log('Request body:', req.body);
       return res.status(400).json({ 
         message: 'Validation errors',
         errors: errors.array()
@@ -54,6 +56,8 @@ router.post('/register', [
     }
 
     const { username, email, password } = req.body;
+    
+    console.log('Attempting to create user:', { username, email, passwordLength: password.length });
     
     // Normalize email and username (trim whitespace and convert to lowercase for comparison)
     const normalizedEmail = email.trim().toLowerCase();
@@ -183,6 +187,8 @@ router.post('/login', [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Login validation errors:', errors.array());
+      console.log('Login request body:', req.body);
       return res.status(400).json({ 
         message: 'Validation errors',
         errors: errors.array()
@@ -190,6 +196,8 @@ router.post('/login', [
     }
 
     const { emailOrUsername, password } = req.body;
+    
+    console.log('Login attempt for:', emailOrUsername);
 
     // Find user by email or username (case-insensitive)
     const user = await User.findOne({
