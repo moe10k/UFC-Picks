@@ -11,13 +11,13 @@
     "build": "cd client && npm run build",
     "seed": "cd server && npm run seed",
     "start": "cd server && npm start",
-    "heroku-postbuild": "npm run install-all && npm run build",
+    "heroku-postbuild": "npm run install-all && cd client && npm run build:prod || npm run build",
     "migrate:sqlite-to-postgres": "cd server && npm run migrate:sqlite-to-postgres",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
+    "node": "18.x",
+    "npm": "9.x"
   },
   "keywords": [
     "ufc",
