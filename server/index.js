@@ -7,7 +7,6 @@ const path = require('path');
 require('dotenv').config();
 
 const { sequelize, testConnection } = require('./config/database');
-const { migrateUFC319 } = require('./utils/migrateUFC319');
 const authRoutes = require('./routes/auth');
 const eventRoutes = require('./routes/events');
 const pickRoutes = require('./routes/picks');
@@ -79,12 +78,8 @@ const initializeDatabase = async () => {
     await sequelize.sync({ force: false }); // Set force: true to recreate tables
     console.log('✅ Database synchronized successfully');
     
-    // Run UFC 319 migration in production
-    if (process.env.NODE_ENV === 'production') {
-      console.log('🔄 Running UFC 319 migration...');
-      await migrateUFC319();
-      console.log('✅ UFC 319 migration completed');
-    }
+    // Database setup complete
+    console.log('✅ Database initialization complete');
   } catch (error) {
     console.error('❌ Database initialization error:', error);
     if (process.env.NODE_ENV === 'production') {
@@ -138,53 +133,6 @@ app.get('/api/test-db', async (req, res) => {
   }
 });
 
-// Temporary admin creation endpoint (REMOVE AFTER USE)
-app.post('/api/create-admin', async (req, res) => {
-  try {
-    // Check if admin user already exists
-    const [adminCheck] = await sequelize.query("SELECT id, username, email, is_admin, is_owner FROM users WHERE email = 'admin@ufcpicks.com'");
-    
-    if (adminCheck.length > 0) {
-      return res.json({
-        status: 'EXISTS',
-        message: 'Admin user already exists',
-        user: adminCheck[0]
-      });
-    }
-    
-    // Create admin user with hashed password
-    const bcrypt = require('bcryptjs');
-    const hashedPassword = await bcrypt.hash('admin123', 12);
-    
-    const [newUser] = await sequelize.query(`
-      INSERT INTO users (username, email, password, is_admin, is_owner, is_active, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
-      RETURNING id, username, email, is_admin, is_owner
-    `, {
-      replacements: ['admin', 'admin@ufcpicks.com', hashedPassword, true, true, true],
-      type: sequelize.QueryTypes.INSERT
-    });
-    
-    res.json({
-      status: 'CREATED',
-      message: 'Admin user created successfully',
-      user: newUser[0],
-      credentials: {
-        email: 'admin@ufcpicks.com',
-        password: 'admin123'
-      }
-    });
-    
-  } catch (error) {
-    console.error('Error creating admin user:', error);
-    res.status(500).json({
-      status: 'ERROR',
-      message: 'Failed to create admin user',
-      error: error.message
-    });
-  }
-});
-
 // Serve static files from the React build in production
 if (process.env.NODE_ENV === 'production') {
   // Serve static files from the React build
@@ -224,6 +172,6 @@ initializeDatabase().then(() => {
   app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
-    console.log(`📊 SQLite database: database.sqlite`);
+    console.log(`📊 MySQL database: ${process.env.DB_NAME || 'ufc_picks'}`);
   });
 }); 

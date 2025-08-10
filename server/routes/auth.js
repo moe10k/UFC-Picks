@@ -367,6 +367,62 @@ router.post('/change-password', auth, [
   }
 });
 
+// @route   POST /api/auth/admin/reset-password
+// @desc    Reset admin user password (admin only, no current password required)
+// @access  Admin
+router.post('/admin/reset-password', adminAuth, [
+  body('userId')
+    .isInt()
+    .withMessage('User ID must be an integer'),
+  body('newPassword')
+    .isLength({ min: 8 })
+    .withMessage('New password must be at least 8 characters long')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+    .withMessage('New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character')
+    .isLength({ max: 128 })
+    .withMessage('New password must not exceed 128 characters')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        message: 'Validation errors',
+        errors: errors.array()
+      });
+    }
+
+    const { userId, newPassword } = req.body;
+
+    // Find the user to reset
+    const userToReset = await User.findByPk(userId);
+    if (!userToReset) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Only allow resetting admin users
+    if (!userToReset.isAdmin) {
+      return res.status(403).json({ message: 'Can only reset passwords for admin users' });
+    }
+
+    // Update password
+    userToReset.password = newPassword;
+    await userToReset.save();
+
+    res.json({ 
+      message: 'Admin password reset successfully',
+      user: {
+        id: userToReset.id,
+        username: userToReset.username,
+        email: userToReset.email,
+        isAdmin: userToReset.isAdmin
+      }
+    });
+  } catch (error) {
+    console.error('Admin password reset error:', error);
+    res.status(500).json({ message: 'Server error resetting admin password' });
+  }
+});
+
 // @route   GET /api/auth/users
 // @desc    Get all users (admin only)
 // @access  Admin

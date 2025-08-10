@@ -15,10 +15,7 @@ build/
 .env.production.local
 
 # Database files
-*.sqlite
-*.sqlite3
 *.db
-server/database.sqlite
 
 # Logs
 npm-debug.log*

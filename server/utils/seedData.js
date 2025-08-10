@@ -145,7 +145,7 @@ const sampleUsers = [
   {
     username: "admin",
     email: "admin@ufcpicks.com",
-    password: "admin123",
+    password: "CHANGED", // Password has been changed from default
     isAdmin: true,
     isOwner: true
   }
@@ -155,26 +155,38 @@ const seedData = async () => {
   try {
     console.log('🌱 Starting database seeding...');
 
-    // Sync database to ensure tables exist
-    await sequelize.sync({ force: true });
+    // Sync database to ensure tables exist (don't force drop due to foreign keys)
+    await sequelize.sync({ force: false });
 
-    // Create sample users individually to ensure password hashing works
-    console.log('Creating sample users...');
-    const createdUsers = [];
-    for (const userData of sampleUsers) {
-      const user = await User.create(userData);
-      createdUsers.push(user);
+    // Check if users already exist
+    const existingUsers = await User.count();
+    if (existingUsers === 0) {
+      // Create sample users individually to ensure password hashing works
+      console.log('Creating sample users...');
+      const createdUsers = [];
+      for (const userData of sampleUsers) {
+        const user = await User.create(userData);
+        createdUsers.push(user);
+      }
+      console.log(`✅ Created ${createdUsers.length} users`);
+    } else {
+      console.log(`ℹ️  ${existingUsers} users already exist, skipping user creation`);
     }
-    console.log(`✅ Created ${createdUsers.length} users`);
 
-    // Create sample events
-    console.log('Creating sample events...');
-    const createdEvents = await Event.bulkCreate(sampleEvents);
-    console.log(`✅ Created ${createdEvents.length} events`);
+    // Check if events already exist
+    const existingEvents = await Event.count();
+    if (existingEvents === 0) {
+      // Create sample events
+      console.log('Creating sample events...');
+      const createdEvents = await Event.bulkCreate(sampleEvents);
+      console.log(`✅ Created ${createdEvents.length} events`);
+    } else {
+      console.log(`ℹ️  ${existingEvents} events already exist, skipping event creation`);
+    }
 
     console.log('🎉 Database seeding completed successfully!');
     console.log('\nSample login credentials:');
-    console.log('Admin: admin@ufcpicks.com / admin123');
+    console.log('Admin: admin@ufcpicks.com / [PASSWORD CHANGED]');
     
   } catch (error) {
     console.error('❌ Error seeding database:', error);

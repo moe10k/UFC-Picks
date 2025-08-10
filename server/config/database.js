@@ -1,27 +1,33 @@
 const { Sequelize } = require('sequelize');
-const path = require('path');
 
 let sequelize;
 
-if (process.env.NODE_ENV === 'production') {
-  // Check if DATABASE_URL is available
-  if (!process.env.DATABASE_URL) {
-    console.error('❌ DATABASE_URL is not set in production environment');
-    console.error('💡 Please add PostgreSQL addon: heroku addons:create heroku-postgresql:mini');
-    process.exit(1);
+// MySQL configuration for all environments
+const dbConfig = {
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 3306,
+  username: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'ufc_picks',
+  dialect: 'mysql',
+  logging: process.env.NODE_ENV === 'production' ? false : console.log,
+  define: {
+    timestamps: true,
+    underscored: true
+  },
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
   }
+};
 
-  // PostgreSQL configuration for production (Heroku)
+// If DATABASE_URL is provided (e.g., from Heroku), use it
+if (process.env.DATABASE_URL) {
   sequelize = new Sequelize(process.env.DATABASE_URL, {
-    dialect: 'postgres',
-    protocol: 'postgres',
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false
-      }
-    },
-    logging: false,
+    dialect: 'mysql',
+    logging: process.env.NODE_ENV === 'production' ? false : console.log,
     define: {
       timestamps: true,
       underscored: true
@@ -34,36 +40,18 @@ if (process.env.NODE_ENV === 'production') {
     }
   });
 } else {
-  // SQLite configuration for development
-  const dbPath = path.join(__dirname, '..', 'database.sqlite');
-  
-  sequelize = new Sequelize({
-    dialect: 'sqlite',
-    storage: dbPath,
-    logging: console.log,
-    define: {
-      timestamps: true,
-      underscored: true
-    }
-  });
+  sequelize = new Sequelize(dbConfig);
 }
 
 // Test the connection
 const testConnection = async () => {
   try {
     await sequelize.authenticate();
-    if (process.env.NODE_ENV === 'production') {
-      console.log('✅ PostgreSQL database connection established successfully.');
-      console.log('🌐 Connected to production database');
-    } else {
-      console.log('✅ SQLite database connection established successfully.');
-      console.log(`📁 Database path: ${path.join(__dirname, '..', 'database.sqlite')}`);
-    }
+    console.log('✅ MySQL database connection established successfully.');
+    console.log(`🌐 Connected to database: ${dbConfig.database}`);
   } catch (error) {
     console.error('❌ Unable to connect to database:', error);
-    if (process.env.NODE_ENV === 'production') {
-      console.error('💡 Make sure DATABASE_URL is set correctly in your environment variables');
-    }
+    console.error('💡 Make sure your MySQL server is running and credentials are correct');
   }
 };
 
