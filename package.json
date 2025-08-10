@@ -2,7 +2,7 @@
   "name": "ufc-picks",
   "version": "1.0.0",
   "description": "A full-stack web application for making and tracking UFC fight predictions",
-  "main": "index.js",
+  "main": "server/index.js",
   "scripts": {
     "install-all": "npm install && cd client && npm install && cd ../server && npm install",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
@@ -11,7 +11,12 @@
     "build": "cd client && npm run build",
     "seed": "cd server && npm run seed",
     "start": "cd server && npm start",
+    "heroku-postbuild": "npm run install-all && npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   },
   "keywords": [
     "ufc",
