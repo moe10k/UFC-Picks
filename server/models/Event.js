@@ -58,7 +58,15 @@ const Event = sequelize.define('Event', {
     defaultValue: '[]',
     get() {
       const rawValue = this.getDataValue('fights');
-      return rawValue ? JSON.parse(rawValue) : [];
+      if (!rawValue) return [];
+      
+      try {
+        return JSON.parse(rawValue);
+      } catch (error) {
+        console.error('Error parsing fights JSON:', error);
+        console.error('Raw fights value:', rawValue);
+        return [];
+      }
     },
     set(value) {
       this.setDataValue('fights', JSON.stringify(value));
