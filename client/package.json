@@ -44,7 +44,6 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://localhost:5000",
   "devDependencies": {
     "@craco/craco": "^7.1.0",
     "@types/react": "^19.1.9",

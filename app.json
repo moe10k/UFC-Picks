@@ -1,0 +1,33 @@
+{
+  "name": "UFC Picks",
+  "description": "A full-stack web application for making and tracking UFC fight predictions",
+  "repository": "https://github.com/yourusername/ufc-picks",
+  "logo": "https://node-js-sample.herokuapp.com/node.png",
+  "keywords": ["ufc", "mma", "predictions", "picks", "react", "nodejs", "express", "sqlite"],
+  "env": {
+    "NODE_ENV": {
+      "description": "Environment setting",
+      "value": "production"
+    },
+    "JWT_SECRET": {
+      "description": "Secret key for JWT tokens",
+      "generator": "secret"
+    },
+    "CORS_ORIGIN": {
+      "description": "CORS origin (leave empty for production)",
+      "value": "",
+      "required": false
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ]
+}
