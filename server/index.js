@@ -68,6 +68,11 @@ const initializeDatabase = async () => {
     console.log('✅ Database synchronized successfully');
   } catch (error) {
     console.error('❌ Database initialization error:', error);
+    if (process.env.NODE_ENV === 'production') {
+      console.error('💡 Make sure DATABASE_URL is set correctly in your environment variables');
+      console.error('💡 Try: heroku config:get DATABASE_URL');
+      process.exit(1);
+    }
   }
 };
 
