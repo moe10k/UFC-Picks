@@ -45,28 +45,26 @@ const mysqlConfig = {
 console.log('🔍 Database Configuration Debug:');
 console.log(`NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
 console.log(`DATABASE_URL: ${process.env.DATABASE_URL ? '✅ Set' : '❌ Not set'}`);
+console.log(`JAWSDB_URL: ${process.env.JAWSDB_URL ? '✅ Set' : '❌ Not set'}`);
 console.log(`DB_HOST: ${process.env.DB_HOST || 'not set'}`);
 console.log(`DB_PORT: ${process.env.DB_PORT || 'not set'}`);
 console.log(`DB_USER: ${process.env.DB_USER || 'not set'}`);
 console.log(`DB_NAME: ${process.env.DB_NAME || 'not set'}`);
 
-// If DATABASE_URL is provided (e.g., from Heroku), use it
-if (process.env.DATABASE_URL) {
-  console.log('🌐 Using DATABASE_URL from environment');
+// Check for database URL (DATABASE_URL or JAWSDB_URL)
+const databaseUrl = process.env.DATABASE_URL || process.env.JAWSDB_URL;
+
+if (databaseUrl) {
+  console.log('🌐 Using database URL from environment');
   
-  const parsedUrl = parseDatabaseUrl(process.env.DATABASE_URL);
+  const parsedUrl = parseDatabaseUrl(databaseUrl);
   if (parsedUrl) {
-    // Determine dialect from protocol or host
-    let dialect = 'mysql'; // default
-    if (parsedUrl.protocol === 'postgres' || parsedUrl.protocol === 'postgresql') {
-      dialect = 'postgres';
-    } else if (parsedUrl.host && parsedUrl.host.includes('postgres')) {
-      dialect = 'postgres';
-    } else if (parsedUrl.host && parsedUrl.host.includes('jawsdb')) {
-      dialect = 'mysql';
-    }
+    // For JawsDB MySQL, always use mysql dialect
+    const dialect = 'mysql';
     
     console.log(`🔗 Connecting to ${dialect} database at ${parsedUrl.host}:${parsedUrl.port}`);
+    console.log(`📊 Database: ${parsedUrl.database}`);
+    console.log(`🔑 Username: ${parsedUrl.username}`);
     
     const config = {
       dialect: dialect,
@@ -83,28 +81,15 @@ if (process.env.DATABASE_URL) {
       }
     };
 
-    // Add SSL configuration for production databases
+    // For JawsDB MySQL, SSL is handled automatically
     if (process.env.NODE_ENV === 'production') {
-      if (dialect === 'postgres') {
-        config.dialectOptions = {
-          ssl: {
-            require: true,
-            rejectUnauthorized: false
-          }
-        };
-      } else if (dialect === 'mysql') {
-        config.dialectOptions = {
-          ssl: {
-            require: true,
-            rejectUnauthorized: false
-          }
-        };
-      }
+      console.log('🔒 SSL will be handled automatically by JawsDB MySQL');
     }
 
-    sequelize = new Sequelize(process.env.DATABASE_URL, config);
+    console.log('🚀 Creating Sequelize instance with database URL');
+    sequelize = new Sequelize(databaseUrl, config);
   } else {
-    console.error('❌ Failed to parse DATABASE_URL, falling back to local config');
+    console.error('❌ Failed to parse database URL, falling back to local config');
     sequelize = new Sequelize(mysqlConfig);
   }
 } else {
@@ -122,8 +107,9 @@ const testConnection = async () => {
     await sequelize.authenticate();
     console.log('✅ Database connection established successfully.');
     
-    if (process.env.DATABASE_URL) {
-      const parsedUrl = parseDatabaseUrl(process.env.DATABASE_URL);
+    const databaseUrl = process.env.DATABASE_URL || process.env.JAWSDB_URL;
+    if (databaseUrl) {
+      const parsedUrl = parseDatabaseUrl(databaseUrl);
       if (parsedUrl) {
         console.log(`🌐 Connected to ${parsedUrl.protocol} database: ${parsedUrl.database}`);
         console.log(`📍 Host: ${parsedUrl.host}:${parsedUrl.port}`);
@@ -133,9 +119,10 @@ const testConnection = async () => {
     }
   } catch (error) {
     console.error('❌ Unable to connect to database:', error);
-    if (process.env.DATABASE_URL) {
-      console.error('💡 Check your DATABASE_URL environment variable');
-      console.error('💡 Try: heroku config:get DATABASE_URL');
+    const databaseUrl = process.env.DATABASE_URL || process.env.JAWSDB_URL;
+    if (databaseUrl) {
+      console.error('💡 Check your database URL environment variable');
+      console.error('💡 Try: heroku config:get DATABASE_URL or heroku config:get JAWSDB_URL');
       console.error('💡 Make sure you have a database addon:');
       console.error('   heroku addons:create jawsdb:mini');
       console.error('   or');

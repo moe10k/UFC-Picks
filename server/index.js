@@ -84,8 +84,8 @@ if (process.env.NODE_ENV === 'production') {
 const initializeDatabase = async () => {
   try {
     // Additional check for production environment
-    if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
-      console.error('❌ DATABASE_URL is required in production environment');
+    if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL && !process.env.JAWSDB_URL) {
+      console.error('❌ DATABASE_URL or JAWSDB_URL is required in production environment');
       console.error('💡 Make sure you have a database addon provisioned:');
       console.error('   heroku addons:create jawsdb:mini');
       process.exit(1);
@@ -128,8 +128,8 @@ const initializeDatabase = async () => {
   } catch (error) {
     console.error('❌ Database initialization error:', error);
     if (process.env.NODE_ENV === 'production') {
-      console.error('💡 Make sure DATABASE_URL is set correctly in your environment variables');
-      console.error('💡 Try: heroku config:get DATABASE_URL');
+      console.error('💡 Make sure DATABASE_URL or JAWSDB_URL is set correctly in your environment variables');
+      console.error('💡 Try: heroku config:get DATABASE_URL or heroku config:get JAWSDB_URL');
       process.exit(1);
     }
   }
