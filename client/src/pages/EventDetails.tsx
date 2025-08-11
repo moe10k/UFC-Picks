@@ -134,18 +134,12 @@ const EventDetails: React.FC = () => {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex justify-center">
         <Link 
           to={`/event/${id}/picks`}
-          className="btn-primary flex-1 text-center"
+          className="btn-primary px-8 py-3 text-lg"
         >
           Make Picks
-        </Link>
-        <Link 
-          to={`/leaderboard/event/${id}`}
-          className="btn-outline flex-1 text-center"
-        >
-          View Leaderboard
         </Link>
       </div>
 
