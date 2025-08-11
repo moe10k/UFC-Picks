@@ -112,4 +112,12 @@ Event.prototype.getVenue = function() {
   };
 };
 
+// Associations will be set up in a separate file to avoid circular dependencies
+// Event.hasMany(require('./Pick'), { 
+//   foreignKey: 'event_id', 
+//   as: 'picks',
+//   onDelete: 'CASCADE',
+//   onUpdate: 'CASCADE'
+// });
+
 module.exports = Event; 

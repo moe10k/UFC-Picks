@@ -463,7 +463,7 @@ router.put('/:id/results', adminAuth, async (req, res) => {
 // @access  Private/Admin
 router.delete('/:id', adminAuth, async (req, res) => {
   try {
-    const { hardDelete = false } = req.query; // Option to completely remove picks
+    const { hardDelete = 'true' } = req.query; // Default to hard delete for complete cleanup
     const event = await Event.findByPk(req.params.id);
     
     if (!event) {
@@ -471,19 +471,24 @@ router.delete('/:id', adminAuth, async (req, res) => {
     }
 
     if (hardDelete === 'true') {
-      // Hard delete: Remove all picks for this event
-      console.log(`🗑️  Hard deleting event ${event.name} and all associated picks...`);
+      // Hard delete: Remove all picks for this event and then the event itself
+      console.log(`🗑️  Hard deleting event ${event.name} and all associated data...`);
       
       const Pick = require('../models/Pick');
+      
+      // First, delete all picks for this event
       const deletedPicks = await Pick.destroy({
         where: { event_id: event.id }
       });
       
-      await event.destroy(); // Completely remove the event
+      console.log(`🗑️  Deleted ${deletedPicks} picks for event ${event.name}`);
+      
+      // Then delete the event (this should cascade due to foreign key constraints)
+      await event.destroy();
       
       console.log(`✅ Event ${event.name} and ${deletedPicks} picks completely removed`);
       res.json({ 
-        message: 'Event and all picks completely removed', 
+        message: 'Event and all associated data completely removed', 
         picksDeleted: deletedPicks 
       });
     } else {
@@ -495,7 +500,7 @@ router.delete('/:id', adminAuth, async (req, res) => {
       console.log(`✅ Event ${event.name} marked as inactive`);
       res.json({ 
         message: 'Event marked as inactive (picks preserved)', 
-        note: 'Use ?hardDelete=true to completely remove event and picks'
+        note: 'Use ?hardDelete=false to preserve event data'
       });
     }
   } catch (error) {
@@ -617,6 +622,66 @@ router.post('/cleanup-orphaned-picks', adminAuth, async (req, res) => {
     }
   } catch (error) {
     console.error('Cleanup orphaned picks error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/events/force-cleanup-all
+// @desc    Force cleanup all orphaned picks and inactive events (Admin only)
+// @access  Private/Admin
+router.post('/force-cleanup-all', adminAuth, async (req, res) => {
+  try {
+    console.log('🧹 Starting force cleanup of all orphaned data...');
+    
+    const Pick = require('../models/Pick');
+    
+    // First, find all picks for inactive events
+    const orphanedPicks = await Pick.findAll({
+      include: [{
+        model: Event,
+        as: 'event',
+        where: { isActive: false }
+      }]
+    });
+    
+    console.log(`📊 Found ${orphanedPicks.length} picks for inactive events`);
+    
+    // Delete all orphaned picks
+    let deletedPicks = 0;
+    if (orphanedPicks.length > 0) {
+      const pickIds = orphanedPicks.map(p => p.id);
+      deletedPicks = await Pick.destroy({
+        where: { id: pickIds }
+      });
+      console.log(`🗑️  Deleted ${deletedPicks} orphaned picks`);
+    }
+    
+    // Find all inactive events
+    const inactiveEvents = await Event.findAll({
+      where: { isActive: false }
+    });
+    
+    console.log(`📊 Found ${inactiveEvents.length} inactive events`);
+    
+    // Delete all inactive events
+    let deletedEvents = 0;
+    if (inactiveEvents.length > 0) {
+      deletedEvents = await Event.destroy({
+        where: { isActive: false }
+      });
+      console.log(`🗑️  Deleted ${deletedEvents} inactive events`);
+    }
+    
+    console.log(`✅ Force cleanup completed: ${deletedPicks} picks and ${deletedEvents} events removed`);
+    
+    res.json({
+      message: 'Force cleanup completed successfully',
+      picksDeleted: deletedPicks,
+      eventsDeleted: deletedEvents,
+      totalCleaned: deletedPicks + deletedEvents
+    });
+  } catch (error) {
+    console.error('Force cleanup error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

@@ -7,6 +7,7 @@ const path = require('path');
 require('dotenv').config();
 
 const { sequelize, testConnection } = require('./config/database');
+const setupAssociations = require('./models/associations');
 const authRoutes = require('./routes/auth');
 const eventRoutes = require('./routes/events');
 const pickRoutes = require('./routes/picks');
@@ -80,6 +81,11 @@ if (process.env.NODE_ENV === 'production') {
 const initializeDatabase = async () => {
   try {
     await testConnection();
+    
+    // Set up model associations before syncing
+    setupAssociations();
+    console.log('✅ Model associations set up successfully');
+    
     await sequelize.sync({ force: false }); // Set force: true to recreate tables
     console.log('✅ Database synchronized successfully');
     

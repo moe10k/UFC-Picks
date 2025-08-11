@@ -170,8 +170,38 @@ export const eventsAPI = {
     return response.data;
   },
 
-  delete: async (id: string): Promise<{ message: string }> => {
-    const response = await api.delete(`/events/${id}`);
+  delete: async (id: string, hardDelete: boolean = true): Promise<{ message: string }> => {
+    const response = await api.delete(`/events/${id}?hardDelete=${hardDelete}`);
+    return response.data;
+  },
+
+  forceCleanup: async (): Promise<{ message: string; picksDeleted: number; eventsDeleted: number; totalCleaned: number }> => {
+    const response = await api.post('/events/force-cleanup-all');
+    return response.data;
+  },
+
+  getDeleted: async (): Promise<{ deletedEvents: any[]; total: number }> => {
+    const response = await api.get('/events/deleted');
+    return response.data;
+  },
+
+  restore: async (id: string): Promise<{ message: string; event: any }> => {
+    const response = await api.post(`/events/${id}/restore`);
+    return response.data;
+  },
+
+  getOrphanedPicks: async (action?: 'report' | 'delete'): Promise<{ message: string; totalOrphaned: number; report?: any[]; picksDeleted?: number }> => {
+    const response = await api.post(`/events/cleanup-orphaned-picks?action=${action || 'report'}`);
+    return response.data;
+  },
+
+  cleanupOrphanedPicks: async (): Promise<{ message: string; picksDeleted: number; totalOrphaned: number }> => {
+    const response = await api.post('/events/cleanup-orphaned-picks?action=delete');
+    return response.data;
+  },
+
+  checkOrphanedPicks: async (): Promise<{ message: string; totalOrphaned: number; report: any[] }> => {
+    const response = await api.post('/events/cleanup-orphaned-picks?action=report');
     return response.data;
   },
 };
