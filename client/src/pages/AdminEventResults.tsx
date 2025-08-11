@@ -59,9 +59,17 @@ const AdminEventResults: React.FC = () => {
     setResults(prev => {
       const existing = prev.find(r => r.fightNumber === fightNumber);
       if (existing) {
+        const updatedResult = { ...existing, [field]: value };
+        
+        // If method is changed to Decision, clear the time
+        if (field === 'method' && value === 'Decision') {
+          updatedResult.time = '';
+          updatedResult.round = 1;
+        }
+        
         return prev.map(r => 
           r.fightNumber === fightNumber 
-            ? { ...r, [field]: value }
+            ? updatedResult
             : r
         );
       } else {
@@ -85,9 +93,16 @@ const AdminEventResults: React.FC = () => {
       return;
     }
 
-    const incompleteResults = results.filter(r => !r.winner || !r.method);
+    const incompleteResults = results.filter(r => {
+      if (!r.winner || !r.method) return true;
+      if (r.method === 'Decision') return false;
+      if (r.method === 'KO/TKO' || r.method === 'Submission') {
+        return !r.time;
+      }
+      return false;
+    });
     if (incompleteResults.length > 0) {
-      toast.error('Please complete all fight results (winner and method required)');
+      toast.error('Please complete all fight results. Time is required for KO/TKO and Submission methods.');
       return;
     }
 
@@ -196,7 +211,7 @@ const AdminEventResults: React.FC = () => {
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="text-center p-4 bg-gray-800 rounded-lg">
                       <h4 className="font-semibold text-white">{fight.fighter1.name}</h4>
                       {fight.fighter1.nickname && <p className="text-gray-400">"{fight.fighter1.nickname}"</p>}
@@ -215,13 +230,13 @@ const AdminEventResults: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                      <label className="block text-white font-medium mb-2">Winner *</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="space-y-3">
+                      <label className="block text-white font-medium">Winner *</label>
                       <select
                         value={result?.winner || ''}
                         onChange={(e) => handleResultChange(fight.fightNumber, 'winner', e.target.value)}
-                        className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
+                        className="w-full px-3 py-3 bg-ufc-dark border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-ufc-red focus:border-transparent transition-all duration-200 hover:border-gray-500"
                         required
                       >
                         <option value="">Select winner</option>
@@ -230,12 +245,12 @@ const AdminEventResults: React.FC = () => {
                       </select>
                     </div>
                     
-                    <div>
-                      <label className="block text-white font-medium mb-2">Method *</label>
+                    <div className="space-y-3">
+                      <label className="block text-white font-medium">Method *</label>
                       <select
                         value={result?.method || ''}
                         onChange={(e) => handleResultChange(fight.fightNumber, 'method', e.target.value)}
-                        className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
+                        className="w-full px-3 py-3 bg-ufc-dark border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-ufc-red focus:border-transparent transition-all duration-200 hover:border-gray-500"
                         required
                       >
                         <option value="">Select method</option>
@@ -245,12 +260,19 @@ const AdminEventResults: React.FC = () => {
                       </select>
                     </div>
                     
-                    <div>
-                      <label className="block text-white font-medium mb-2">Round</label>
+                    <div className="space-y-3">
+                      <label className="block text-white font-medium">
+                        Round {result?.method === 'Decision' ? '(N/A)' : ''}
+                      </label>
                       <select
                         value={result?.round || 1}
                         onChange={(e) => handleResultChange(fight.fightNumber, 'round', parseInt(e.target.value))}
-                        className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
+                        className={`w-full px-3 py-3 border rounded-lg transition-all duration-200 ${
+                          result?.method === 'Decision' 
+                            ? 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-600' 
+                            : 'bg-ufc-dark text-white border-gray-600 focus:outline-none focus:ring-2 focus:ring-ufc-red focus:border-transparent hover:border-gray-500'
+                        }`}
+                        disabled={result?.method === 'Decision'}
                       >
                         {rounds.map(round => (
                           <option key={round} value={round}>{round}</option>
@@ -258,15 +280,66 @@ const AdminEventResults: React.FC = () => {
                       </select>
                     </div>
                     
-                    <div>
-                      <label className="block text-white font-medium mb-2">Time</label>
-                      <input
-                        type="text"
-                        value={result?.time || ''}
-                        onChange={(e) => handleResultChange(fight.fightNumber, 'time', e.target.value)}
-                        className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-                        placeholder="e.g., 2:34"
-                      />
+                    <div className="space-y-3">
+                      <label className="block text-white font-medium">
+                        Time {result?.method === 'Decision' ? '(N/A)' : '*'}
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <input
+                            type="number"
+                            min="0"
+                            max="5"
+                            placeholder="0"
+                            value={result?.time ? result.time.split(':')[0] || '' : ''}
+                            onChange={(e) => {
+                              let minutes = parseInt(e.target.value) || 0;
+                              // Ensure minutes is between 0-5
+                              minutes = Math.max(0, Math.min(5, minutes));
+                              const seconds = result?.time ? result.time.split(':')[1] || '00' : '00';
+                              const newTime = `${minutes.toString().padStart(2, '0')}:${seconds}`;
+                              handleResultChange(fight.fightNumber, 'time', newTime);
+                            }}
+                            disabled={result?.method === 'Decision'}
+                            className={`w-full px-3 py-3 border rounded-lg transition-all duration-200 text-center ${
+                              result?.method === 'Decision' 
+                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-600' 
+                                : 'bg-ufc-dark text-white border-gray-600 focus:outline-none focus:ring-2 focus:ring-ufc-red focus:border-transparent hover:border-gray-500'
+                            }`}
+                          />
+                          <p className="text-xs text-gray-400 text-center mt-1">Minutes</p>
+                        </div>
+                        <div className="flex items-center text-gray-400 text-xl font-bold">
+                          :
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            type="number"
+                            min="0"
+                            max="59"
+                            placeholder="00"
+                            value={result?.time ? result.time.split(':')[1] || '' : ''}
+                            onChange={(e) => {
+                              let seconds = parseInt(e.target.value) || 0;
+                              // Ensure seconds is between 0-59
+                              seconds = Math.max(0, Math.min(59, seconds));
+                              const minutes = result?.time ? result.time.split(':')[0] || '0' : '0';
+                              const newTime = `${minutes.padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                              handleResultChange(fight.fightNumber, 'time', newTime);
+                            }}
+                            disabled={result?.method === 'Decision'}
+                            className={`w-full px-3 py-3 border rounded-lg transition-all duration-200 text-center ${
+                              result?.method === 'Decision' 
+                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-600' 
+                                : 'bg-ufc-dark text-white border-gray-600 focus:outline-none focus:ring-2 focus:ring-ufc-red focus:border-transparent hover:border-gray-500'
+                            }`}
+                          />
+                          <p className="text-xs text-gray-400 text-center mt-1">Seconds</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        {result?.method === 'Decision' ? 'Not applicable for Decision' : 'Format: MM:SS (0:00 to 5:00)'}
+                      </p>
                     </div>
                   </div>
                 </div>

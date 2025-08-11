@@ -82,6 +82,7 @@ export interface Pick {
   winner: 'fighter1' | 'fighter2';
   method: 'KO/TKO' | 'Submission' | 'Decision';
   round?: number; // Optional for Decision method
+  time?: string; // Optional time prediction for KO/TKO and Submission methods
 }
 
 export interface UserPick {
