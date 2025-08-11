@@ -41,7 +41,8 @@ const MakePicks: React.FC = () => {
               fightNumber: fight.fightNumber,
               winner: 'fighter1',
               method: 'Decision',
-              round: undefined
+              round: undefined,
+              time: undefined
             }));
             setPicks(initialPicks);
           }
@@ -51,7 +52,8 @@ const MakePicks: React.FC = () => {
             fightNumber: fight.fightNumber,
             winner: 'fighter1',
             method: 'Decision',
-            round: undefined
+            round: undefined,
+            time: undefined
           }));
           setPicks(initialPicks);
         }
@@ -72,14 +74,16 @@ const MakePicks: React.FC = () => {
         if (pick.fightNumber === fightNumber) {
           const updatedPick = { ...pick, [field]: value };
           
-          // If method is changed to Decision, clear the round
+          // If method is changed to Decision, clear the round and time
           if (field === 'method' && value === 'Decision') {
             updatedPick.round = undefined;
+            updatedPick.time = undefined;
           }
           
           // If method is changed from Decision to KO/TKO or Submission, set default round to 3
           if (field === 'method' && value !== 'Decision' && pick.method === 'Decision') {
             updatedPick.round = 3;
+            updatedPick.time = undefined;
           }
           
           return updatedPick;
@@ -104,6 +108,11 @@ const MakePicks: React.FC = () => {
       // For Decision method, round is not required
       // For other methods (KO/TKO, Submission), round is required
       if (pick.method !== 'Decision' && (pick.round === undefined || pick.round === null)) {
+        return true;
+      }
+      
+      // For KO/TKO and Submission methods, time is required
+      if ((pick.method === 'KO/TKO' || pick.method === 'Submission') && !pick.time) {
         return true;
       }
       
@@ -209,9 +218,14 @@ const MakePicks: React.FC = () => {
             {/* Progress Summary */}
             {(() => {
               const totalPicks = picks.length;
-              const completePicks = picks.filter(pick => 
-                pick.winner && pick.method && (pick.method === 'Decision' || (pick.round !== undefined && pick.round !== null))
-              ).length;
+              const completePicks = picks.filter(pick => {
+                if (!pick.winner || !pick.method) return false;
+                if (pick.method === 'Decision') return true;
+                if (pick.method === 'KO/TKO' || pick.method === 'Submission') {
+                  return pick.round !== undefined && pick.round !== null && pick.time;
+                }
+                return pick.round !== undefined && pick.round !== null;
+              }).length;
               const incompletePicks = totalPicks - completePicks;
               
               return (
@@ -271,7 +285,9 @@ const MakePicks: React.FC = () => {
                       Co-Main
                     </span>
                   )}
-                  {pick && ((!pick.winner || !pick.method) || (pick.method !== 'Decision' && (pick.round === undefined || pick.round === null))) && (
+                  {pick && ((!pick.winner || !pick.method) || 
+                    (pick.method !== 'Decision' && (pick.round === undefined || pick.round === null)) ||
+                    ((pick.method === 'KO/TKO' || pick.method === 'Submission') && !pick.time)) && (
                     <span className="px-3 py-1 bg-red-600 rounded-full text-sm font-medium text-white">
                       Incomplete
                     </span>
@@ -329,14 +345,14 @@ const MakePicks: React.FC = () => {
               </div>
 
               {/* Pick Options */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                 {/* Winner */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-3">
-                    Winner
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-300">
+                    Winner *
                   </label>
-                  <div className="space-y-2">
-                    <label className="flex items-center">
+                  <div className="space-y-3">
+                    <label className="flex items-center p-3 bg-ufc-dark border border-gray-600 rounded-lg hover:border-ufc-red hover:shadow-lg transition-all duration-200 cursor-pointer">
                       <input
                         type="radio"
                         name={`winner-${fight.fightNumber}`}
@@ -345,9 +361,9 @@ const MakePicks: React.FC = () => {
                         onChange={(e) => handlePickChange(fight.fightNumber, 'winner', e.target.value)}
                         className="mr-3 text-ufc-red focus:ring-ufc-red"
                       />
-                      <span className="text-white">{fight.fighter1.name}</span>
+                      <span className="text-white font-medium">{fight.fighter1.name}</span>
                     </label>
-                    <label className="flex items-center">
+                    <label className="flex items-center p-3 bg-ufc-dark border border-gray-600 rounded-lg hover:border-ufc-red hover:shadow-lg transition-all duration-200 cursor-pointer">
                       <input
                         type="radio"
                         name={`winner-${fight.fightNumber}`}
@@ -356,20 +372,20 @@ const MakePicks: React.FC = () => {
                         onChange={(e) => handlePickChange(fight.fightNumber, 'winner', e.target.value)}
                         className="mr-3 text-ufc-red focus:ring-ufc-red"
                       />
-                      <span className="text-white">{fight.fighter2.name}</span>
+                      <span className="text-white font-medium">{fight.fighter2.name}</span>
                     </label>
                   </div>
                 </div>
 
                 {/* Method */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-3">
-                    Method
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-300">
+                    Method *
                   </label>
                   <select
                     value={pick?.method || 'Decision'}
                     onChange={(e) => handlePickChange(fight.fightNumber, 'method', e.target.value)}
-                    className="input-field"
+                    className="w-full px-3 py-3 bg-ufc-dark border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-ufc-red focus:border-transparent transition-all duration-200 hover:border-gray-500"
                   >
                     <option value="Decision">Decision</option>
                     <option value="KO/TKO">KO/TKO</option>
@@ -378,20 +394,20 @@ const MakePicks: React.FC = () => {
                 </div>
 
                 {/* Round */}
-                <div>
-                  <label className={`block text-sm font-medium mb-3 ${
+                <div className="space-y-3">
+                  <label className={`block text-sm font-medium ${
                     pick?.method === 'Decision' ? 'text-gray-500' : 'text-gray-300'
                   }`}>
-                    Round
+                    Round {pick?.method === 'Decision' ? '(N/A)' : '*'}
                   </label>
                   <select
                     value={pick?.method === 'Decision' ? '' : (pick?.round?.toString() || '')}
                     onChange={(e) => handlePickChange(fight.fightNumber, 'round', e.target.value ? parseInt(e.target.value) : undefined)}
                     disabled={pick?.method === 'Decision'}
-                    className={`input-field ${
+                    className={`w-full px-3 py-3 border rounded-lg transition-all duration-200 ${
                       pick?.method === 'Decision' 
-                        ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
-                        : ''
+                        ? 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-600' 
+                        : 'bg-ufc-dark text-white border-gray-600 focus:outline-none focus:ring-2 focus:ring-ufc-red focus:border-transparent hover:border-gray-500'
                     }`}
                   >
                     <option value="">Select Round</option>
@@ -401,6 +417,71 @@ const MakePicks: React.FC = () => {
                     <option value={4}>Round 4</option>
                     <option value={5}>Round 5</option>
                   </select>
+                </div>
+
+                {/* Time */}
+                <div className="space-y-3">
+                  <label className={`block text-sm font-medium ${
+                    pick?.method === 'Decision' ? 'text-gray-500' : 'text-gray-300'
+                  }`}>
+                    Time {pick?.method === 'Decision' ? '(N/A)' : '*'}
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <input
+                        type="number"
+                        min="0"
+                        max="5"
+                        placeholder="0"
+                        value={pick?.time ? pick.time.split(':')[0] || '' : ''}
+                        onChange={(e) => {
+                          let minutes = parseInt(e.target.value) || 0;
+                          // Ensure minutes is between 0-5
+                          minutes = Math.max(0, Math.min(5, minutes));
+                          const seconds = pick?.time ? pick.time.split(':')[1] || '00' : '00';
+                          const newTime = `${minutes.toString().padStart(2, '0')}:${seconds}`;
+                          handlePickChange(fight.fightNumber, 'time', newTime);
+                        }}
+                        disabled={pick?.method === 'Decision'}
+                        className={`w-full px-3 py-3 border rounded-lg transition-all duration-200 text-center ${
+                          pick?.method === 'Decision' 
+                            ? 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-600' 
+                            : 'bg-ufc-dark text-white border-gray-600 focus:outline-none focus:ring-2 focus:ring-ufc-red focus:border-transparent hover:border-gray-500'
+                        }`}
+                      />
+                      <p className="text-xs text-gray-400 text-center mt-1">Minutes</p>
+                    </div>
+                    <div className="flex items-center text-gray-400 text-xl font-bold">
+                      :
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="number"
+                        min="0"
+                        max="59"
+                        placeholder="00"
+                        value={pick?.time ? pick.time.split(':')[1] || '' : ''}
+                        onChange={(e) => {
+                          let seconds = parseInt(e.target.value) || 0;
+                          // Ensure seconds is between 0-59
+                          seconds = Math.max(0, Math.min(59, seconds));
+                          const minutes = pick?.time ? pick.time.split(':')[0] || '0' : '0';
+                          const newTime = `${minutes.padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                          handlePickChange(fight.fightNumber, 'time', newTime);
+                        }}
+                        disabled={pick?.method === 'Decision'}
+                        className={`w-full px-3 py-3 border rounded-lg transition-all duration-200 text-center ${
+                          pick?.method === 'Decision' 
+                            ? 'bg-gray-700 text-gray-500 cursor-not-allowed border-gray-600' 
+                            : 'bg-ufc-dark text-white border-gray-600 focus:outline-none focus:ring-2 focus:ring-ufc-red focus:border-transparent hover:border-gray-500'
+                        }`}
+                      />
+                      <p className="text-xs text-gray-400 text-center mt-1">Seconds</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    {pick?.method === 'Decision' ? 'Not applicable for Decision' : 'Format: MM:SS (0:00 to 5:00)'}
+                  </p>
                 </div>
               </div>
             </div>

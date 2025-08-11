@@ -318,8 +318,8 @@ router.put('/:id/results', adminAuth, async (req, res) => {
         const pickedWinnerName = p.winner === 'fighter1' ? fighter1Name : fighter2Name;
         
         console.log(`  🥊 Fight ${p.fightNumber}: ${fighter1Name} vs ${fighter2Name}`);
-        console.log(`    📝 ${username} picked: ${pickedWinnerName} by ${p.method}${p.round ? ` in round ${p.round}` : ''}`);
-        console.log(`    🎯 Actual result: ${winnerName} by ${fight.result.method}${fight.result.round ? ` in round ${fight.result.round}` : ''}`);
+        console.log(`    📝 ${username} picked: ${pickedWinnerName} by ${p.method}${p.round ? ` in round ${p.round}` : ''}${p.time ? ` at ${p.time}` : ''}`);
+        console.log(`    🎯 Actual result: ${winnerName} by ${fight.result.method}${fight.result.round ? ` in round ${fight.result.round}` : ''}${fight.result.time ? ` at ${fight.result.time}` : ''}`);
         
         // Check if winner prediction is correct
         if (fight.result.winner === p.winner) {
@@ -332,16 +332,26 @@ router.put('/:id/results', adminAuth, async (req, res) => {
           if (fight.result.method && fight.result.method === p.method) {
             points += 1;
             console.log(`    ✅ Method correct (+1 bonus point)`);
+            
+            // Check if round prediction is correct (only for non-Decision methods)
+            if (fight.result.method !== 'Decision' && fight.result.round && p.round && fight.result.round === p.round) {
+              points += 1;
+              console.log(`    ✅ Round correct (+1 bonus point)`);
+              
+              // Check if time prediction is correct (only for KO/TKO and Submission methods)
+              if ((fight.result.method === 'KO/TKO' || fight.result.method === 'Submission') && 
+                  fight.result.time && p.time && fight.result.time === p.time) {
+                points += 1;
+                console.log(`    ✅ Time correct (+1 bonus point)`);
+              } else if ((fight.result.method === 'KO/TKO' || fight.result.method === 'Submission') && 
+                         fight.result.time && p.time) {
+                console.log(`    ❌ Time incorrect (no bonus point)`);
+              }
+            } else if (fight.result.method !== 'Decision' && fight.result.round && p.round) {
+              console.log(`    ❌ Round incorrect (no bonus point)`);
+            }
           } else {
             console.log(`    ❌ Method incorrect (no bonus point)`);
-          }
-          
-          // Check if round prediction is correct (only for non-Decision methods)
-          if (fight.result.method !== 'Decision' && fight.result.round && p.round && fight.result.round === p.round) {
-            points += 1;
-            console.log(`    ✅ Round correct (+1 bonus point)`);
-          } else if (fight.result.method !== 'Decision' && fight.result.round && p.round) {
-            console.log(`    ❌ Round incorrect (no bonus point)`);
           }
         } else {
           console.log(`    ❌ Winner incorrect - no points awarded`);
