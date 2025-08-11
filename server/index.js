@@ -118,20 +118,28 @@ app.get('/api/test-db', async (req, res) => {
     // Test database connection
     await sequelize.authenticate();
 
-    // Check if users table exists
-    const [results] = await sequelize.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users'");
+    // Get database dialect
+    const dialect = sequelize.getDialect();
+    
+    // Check if users table exists using Sequelize
+    const tableExists = await sequelize.getQueryInterface().tableExists('users');
 
-    // Check table structure
+    // Get table structure using Sequelize
     let tableStructure = null;
-    if (results.length > 0) {
-      const [columns] = await sequelize.query("SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position");
-      tableStructure = columns;
+    if (tableExists) {
+      const attributes = await sequelize.getQueryInterface().describeTable('users');
+      tableStructure = attributes;
     }
+
+    // Get all table names using Sequelize
+    const allTables = await sequelize.getQueryInterface().showAllTables();
 
     res.json({
       status: 'OK',
       message: 'Database connection successful',
-      tables: results.map(r => r.table_name),
+      dialect: dialect,
+      tables: allTables,
+      usersTableExists: tableExists,
       usersTableStructure: tableStructure
     });
   } catch (error) {
