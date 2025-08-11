@@ -50,8 +50,11 @@ const Login: React.FC = () => {
         {/* Semi-transparent backdrop container */}
         <div className="backdrop-blur-md bg-black/90 rounded-2xl p-8 border border-white/10 shadow-2xl">
           <div>
-            <div className="mx-auto h-16 w-16 bg-ufc-red rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-2xl">UFC</span>
+            <div className="mx-auto flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 bg-ufc-red rounded-lg flex items-center justify-center mr-3">
+                <span className="text-white font-bold text-lg">UFC</span>
+              </div>
+              <span className="text-white font-bold text-3xl">Picks</span>
             </div>
             <h2 className="mt-6 text-center text-3xl font-extrabold text-white drop-shadow-lg">
               Sign in to your account
