@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
 const Register: React.FC = () => {
@@ -17,6 +17,45 @@ const Register: React.FC = () => {
   
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  // Password requirements with real-time validation
+  const passwordRequirements = useMemo(() => [
+    {
+      id: 'length',
+      label: 'At least 6 characters',
+      test: (password: string) => password.length >= 6,
+    },
+    {
+      id: 'uppercase',
+      label: 'At least 1 uppercase letter',
+      test: (password: string) => /[A-Z]/.test(password),
+    },
+    {
+      id: 'lowercase',
+      label: 'At least 1 lowercase letter',
+      test: (password: string) => /[a-z]/.test(password),
+    },
+    {
+      id: 'number',
+      label: 'At least 1 number',
+      test: (password: string) => /\d/.test(password),
+    },
+    {
+      id: 'special',
+      label: 'At least 1 special character',
+      test: (password: string) => /[!@#$%^&*(),.?":{}|<>]/.test(password),
+    },
+  ], []);
+
+  // Check if all password requirements are met
+  const isPasswordValid = useMemo(() => {
+    return passwordRequirements.every(req => req.test(formData.password));
+  }, [formData.password, passwordRequirements]);
+
+  // Check if passwords match
+  const doPasswordsMatch = useMemo(() => {
+    return formData.password === formData.confirmPassword && formData.password.length > 0;
+  }, [formData.password, formData.confirmPassword]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -46,12 +85,12 @@ const Register: React.FC = () => {
       return false;
     }
 
-    if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters long');
+    if (!isPasswordValid) {
+      toast.error('Please ensure your password meets all requirements');
       return false;
     }
 
-    if (formData.password !== formData.confirmPassword) {
+    if (!doPasswordsMatch) {
       toast.error('Passwords do not match');
       return false;
     }
@@ -156,7 +195,13 @@ const Register: React.FC = () => {
                     required
                     value={formData.password}
                     onChange={handleChange}
-                    className="input-field pr-10 bg-white/10 border-white/20 text-white placeholder-gray-300 focus:ring-ufc-red focus:border-ufc-red"
+                    className={`input-field pr-10 transition-colors duration-200 ${
+                      formData.password.length > 0
+                        ? isPasswordValid
+                          ? 'bg-white/10 border-green-500/50 focus:ring-green-500 focus:border-green-500'
+                          : 'bg-white/10 border-yellow-500/50 focus:ring-yellow-500 focus:border-yellow-500'
+                        : 'bg-white/10 border-white/20 focus:ring-ufc-red focus:border-ufc-red'
+                    } text-white placeholder-gray-300`}
                     placeholder="Create a password"
                   />
                   <button
@@ -171,6 +216,36 @@ const Register: React.FC = () => {
                     )}
                   </button>
                 </div>
+                
+                {/* Password Requirements */}
+                {formData.password.length > 0 && (
+                  <div className="mt-3 p-3 bg-black/20 rounded-lg border border-white/10">
+                    <p className="text-xs font-medium text-gray-200 mb-2">Password Requirements:</p>
+                    <div className="space-y-1">
+                      {passwordRequirements.map((requirement) => {
+                        const isMet = requirement.test(formData.password);
+                        return (
+                          <div key={requirement.id} className="flex items-center space-x-2">
+                            <div className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${
+                              isMet ? 'bg-green-500' : 'bg-gray-500'
+                            }`}>
+                              {isMet ? (
+                                <CheckIcon className="w-3 h-3 text-white" />
+                              ) : (
+                                <XMarkIcon className="w-3 h-3 text-white" />
+                              )}
+                            </div>
+                            <span className={`text-xs ${
+                              isMet ? 'text-green-300' : 'text-gray-400'
+                            }`}>
+                              {requirement.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -186,7 +261,13 @@ const Register: React.FC = () => {
                     required
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className="input-field pr-10 bg-white/10 border-white/20 text-white placeholder-gray-300 focus:ring-ufc-red focus:border-ufc-red"
+                    className={`input-field pr-10 transition-colors duration-200 ${
+                      formData.confirmPassword.length > 0
+                        ? doPasswordsMatch
+                          ? 'bg-white/10 border-green-500/50 focus:ring-green-500 focus:border-green-500'
+                          : 'bg-white/10 border-red-500/50 focus:ring-red-500 focus:border-red-500'
+                        : 'bg-white/10 border-white/20 focus:ring-ufc-red focus:border-ufc-red'
+                    } text-white placeholder-gray-300`}
                     placeholder="Confirm your password"
                   />
                   <button
@@ -201,13 +282,33 @@ const Register: React.FC = () => {
                     )}
                   </button>
                 </div>
+                
+                {/* Password Match Indicator */}
+                {formData.confirmPassword.length > 0 && (
+                  <div className="mt-2 flex items-center space-x-2">
+                    <div className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${
+                      doPasswordsMatch ? 'bg-green-500' : 'bg-red-500'
+                    }`}>
+                      {doPasswordsMatch ? (
+                        <CheckIcon className="w-3 h-3 text-white" />
+                      ) : (
+                        <XMarkIcon className="w-3 h-3 text-white" />
+                      )}
+                    </div>
+                    <span className={`text-xs ${
+                      doPasswordsMatch ? 'text-green-300' : 'text-red-300'
+                    }`}>
+                      {doPasswordsMatch ? 'Passwords match' : 'Passwords do not match'}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
             <div>
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !isPasswordValid || !doPasswordsMatch}
                 className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-ufc-red hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ufc-red disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
                 {isLoading ? (
