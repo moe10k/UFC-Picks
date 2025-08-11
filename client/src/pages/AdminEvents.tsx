@@ -12,23 +12,31 @@ import {
   ChartBarIcon,
   PencilIcon,
   TrashIcon,
-  EyeIcon
+  EyeIcon,
+  TrashIcon as TrashIconSolid
 } from '@heroicons/react/24/outline';
 
 const AdminEvents: React.FC = () => {
   const { user } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
+  const [deletedEvents, setDeletedEvents] = useState<any[]>([]);
+  const [orphanedPicksCount, setOrphanedPicksCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     fetchEvents();
+    fetchDeletedEvents();
+    checkOrphanedPicks();
   }, []);
 
   const fetchEvents = async () => {
     try {
       const { events } = await eventsAPI.getAll({ limit: 50 });
       setEvents(events);
+      // Also refresh deleted events and orphaned picks count
+      fetchDeletedEvents();
+      checkOrphanedPicks();
     } catch (error: any) {
       toast.error('Failed to load events');
     } finally {
@@ -36,17 +44,84 @@ const AdminEvents: React.FC = () => {
     }
   };
 
+  const fetchDeletedEvents = async () => {
+    try {
+      const { deletedEvents } = await eventsAPI.getDeleted();
+      setDeletedEvents(deletedEvents);
+    } catch (error: any) {
+      console.error('Failed to load deleted events:', error);
+    }
+  };
+
+  const checkOrphanedPicks = async () => {
+    try {
+      const result = await eventsAPI.checkOrphanedPicks();
+      setOrphanedPicksCount(result.totalOrphaned);
+      if (result.totalOrphaned > 0) {
+        toast(`Found ${result.totalOrphaned} orphaned picks`);
+      }
+    } catch (error: any) {
+      console.error('Failed to check orphaned picks:', error);
+    }
+  };
+
   const handleDeleteEvent = async (eventId: number) => {
-    if (!window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+    if (!window.confirm('Are you sure you want to delete this event? This action cannot be undone. All picks and results for this event will be permanently deleted.')) {
       return;
     }
 
     try {
-      await eventsAPI.delete(eventId.toString());
-      toast.success('Event deleted successfully');
+      await eventsAPI.delete(eventId.toString(), true);
+      toast.success('Event and all associated data deleted successfully');
       fetchEvents();
+      fetchDeletedEvents();
+      checkOrphanedPicks();
     } catch (error: any) {
       toast.error('Failed to delete event');
+    }
+  };
+
+  const handleForceCleanup = async () => {
+    if (!window.confirm('Are you sure you want to force cleanup all orphaned data? This will permanently delete all inactive events and their associated picks. This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await eventsAPI.forceCleanup();
+      toast.success('Force cleanup completed successfully');
+      fetchEvents();
+      fetchDeletedEvents();
+      checkOrphanedPicks();
+    } catch (error: any) {
+      toast.error('Failed to perform force cleanup');
+    }
+  };
+
+  const handleCleanupOrphanedPicks = async () => {
+    if (!window.confirm('Are you sure you want to clean up orphaned picks? This will permanently delete all picks for inactive events. This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const result = await eventsAPI.cleanupOrphanedPicks();
+      toast.success(`Cleaned up ${result.picksDeleted} orphaned picks`);
+      fetchEvents();
+      fetchDeletedEvents();
+      checkOrphanedPicks();
+    } catch (error: any) {
+      toast.error('Failed to clean up orphaned picks');
+    }
+  };
+
+  const handleRestoreEvent = async (eventId: number) => {
+    try {
+      await eventsAPI.restore(eventId.toString());
+      toast.success('Event restored successfully');
+      fetchEvents();
+      fetchDeletedEvents();
+      checkOrphanedPicks();
+    } catch (error: any) {
+      toast.error('Failed to restore event');
     }
   };
 
@@ -104,13 +179,36 @@ const AdminEvents: React.FC = () => {
           </div>
           <p className="text-gray-400">Manage all UFC events and fights</p>
         </div>
-        <Link
-          to="/admin/events/create"
-          className="btn-primary flex items-center"
-        >
-          <PlusIcon className="w-5 h-5 mr-2" />
-          Create New Event
-        </Link>
+        <div className="flex gap-3">
+          <button
+            onClick={handleCleanupOrphanedPicks}
+            className="btn-secondary flex items-center"
+            title="Clean up orphaned picks for inactive events"
+          >
+            <TrashIcon className="w-5 h-5 mr-2" />
+            Clean Orphaned Picks
+            {orphanedPicksCount > 0 && (
+              <span className="ml-2 bg-red-600 text-white text-xs px-2 py-1 rounded-full">
+                {orphanedPicksCount}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={handleForceCleanup}
+            className="btn-danger flex items-center"
+            title="Force cleanup all orphaned data"
+          >
+            <TrashIconSolid className="w-5 h-5 mr-2" />
+            Force Cleanup
+          </button>
+          <Link
+            to="/admin/events/create"
+            className="btn-primary flex items-center"
+          >
+            <PlusIcon className="w-5 h-5 mr-2" />
+            Create New Event
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
@@ -159,6 +257,41 @@ const AdminEvents: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Deleted Events Section */}
+      {deletedEvents.length > 0 && (
+        <div className="card">
+          <h2 className="text-lg font-semibold text-white mb-4">Deleted/Inactive Events ({deletedEvents.length})</h2>
+          <div className="space-y-3">
+            {deletedEvents.map((event) => (
+              <div key={event.id} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                <div>
+                  <h3 className="text-white font-medium">{event.name}</h3>
+                  <p className="text-gray-400 text-sm">
+                    Deleted: {new Date(event.updatedAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleRestoreEvent(event.id)}
+                  className="btn-secondary text-sm px-3 py-2"
+                >
+                  Restore
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 pt-4 border-t border-gray-700">
+            <button
+              onClick={handleForceCleanup}
+              className="btn-danger text-sm px-3 py-2 flex items-center"
+              title="Permanently delete all inactive events and their picks"
+            >
+              <TrashIconSolid className="w-4 h-4 mr-2" />
+              Permanent Delete All
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Events List */}
       <div className="space-y-4">

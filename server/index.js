@@ -4,9 +4,13 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-require('dotenv').config();
+// Only load .env file in development
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 
-const { sequelize, testConnection } = require('./config/database');
+const { sequelize, testConnection, reinitializeConnection } = require('./config/database');
+const setupAssociations = require('./models/associations');
 const authRoutes = require('./routes/auth');
 const eventRoutes = require('./routes/events');
 const pickRoutes = require('./routes/picks');
@@ -79,7 +83,43 @@ if (process.env.NODE_ENV === 'production') {
 // Database connection and sync
 const initializeDatabase = async () => {
   try {
-    await testConnection();
+    // Additional check for production environment
+    if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL && !process.env.JAWSDB_URL) {
+      console.error('❌ DATABASE_URL or JAWSDB_URL is required in production environment');
+      console.error('💡 Make sure you have a database addon provisioned:');
+      console.error('   heroku addons:create jawsdb:mini');
+      process.exit(1);
+    }
+    
+    // Try to connect with retry mechanism
+    let retries = 3;
+    let lastError;
+    
+    while (retries > 0) {
+      try {
+        await testConnection();
+        break; // Success, exit retry loop
+      } catch (error) {
+        lastError = error;
+        retries--;
+        if (retries > 0) {
+          console.log(`⚠️ Database connection failed, retrying... (${retries} attempts left)`);
+          // Wait a bit before retrying
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Reinitialize connection in case environment variables were loaded late
+          reinitializeConnection();
+        }
+      }
+    }
+    
+    if (retries === 0) {
+      throw lastError;
+    }
+    
+    // Set up model associations before syncing
+    setupAssociations();
+    console.log('✅ Model associations set up successfully');
+    
     await sequelize.sync({ force: false }); // Set force: true to recreate tables
     console.log('✅ Database synchronized successfully');
     
@@ -88,8 +128,8 @@ const initializeDatabase = async () => {
   } catch (error) {
     console.error('❌ Database initialization error:', error);
     if (process.env.NODE_ENV === 'production') {
-      console.error('💡 Make sure DATABASE_URL is set correctly in your environment variables');
-      console.error('💡 Try: heroku config:get DATABASE_URL');
+      console.error('💡 Make sure DATABASE_URL or JAWSDB_URL is set correctly in your environment variables');
+      console.error('💡 Try: heroku config:get DATABASE_URL or heroku config:get JAWSDB_URL');
       process.exit(1);
     }
   }
@@ -112,20 +152,28 @@ app.get('/api/test-db', async (req, res) => {
     // Test database connection
     await sequelize.authenticate();
 
-    // Check if users table exists
-    const [results] = await sequelize.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users'");
+    // Get database dialect
+    const dialect = sequelize.getDialect();
+    
+    // Check if users table exists using Sequelize
+    const tableExists = await sequelize.getQueryInterface().tableExists('users');
 
-    // Check table structure
+    // Get table structure using Sequelize
     let tableStructure = null;
-    if (results.length > 0) {
-      const [columns] = await sequelize.query("SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position");
-      tableStructure = columns;
+    if (tableExists) {
+      const attributes = await sequelize.getQueryInterface().describeTable('users');
+      tableStructure = attributes;
     }
+
+    // Get all table names using Sequelize
+    const allTables = await sequelize.getQueryInterface().showAllTables();
 
     res.json({
       status: 'OK',
       message: 'Database connection successful',
-      tables: results.map(r => r.table_name),
+      dialect: dialect,
+      tables: allTables,
+      usersTableExists: tableExists,
       usersTableStructure: tableStructure
     });
   } catch (error) {

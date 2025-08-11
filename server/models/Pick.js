@@ -22,7 +22,9 @@ const Pick = sequelize.define('Pick', {
     allowNull: false,
     references: {
       model: Event,
-      key: 'id'
+      key: 'id',
+      onDelete: 'CASCADE',
+      onUpdate: 'CASCADE'
     }
   },
   // Store picks as JSON
@@ -74,9 +76,9 @@ const Pick = sequelize.define('Pick', {
   ]
 });
 
-// Associations
-Pick.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-Pick.belongsTo(Event, { foreignKey: 'event_id', as: 'event' });
+// Associations will be set up in a separate file to avoid circular dependencies
+// Pick.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+// Pick.belongsTo(Event, { foreignKey: 'event_id', as: 'event' });
 
 // Instance methods
 Pick.prototype.getAccuracy = function() {

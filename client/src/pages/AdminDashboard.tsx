@@ -36,6 +36,7 @@ const AdminDashboard: React.FC = () => {
     fetchEvents();
   }, []);
 
+  // Early returns after all hooks
   if (!user?.isAdmin && !user?.isOwner) {
     return (
       <div className="text-center py-12">

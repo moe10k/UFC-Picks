@@ -10,7 +10,7 @@ A full-stack web application for making and tracking UFC fight predictions. User
 - **Pick Submission**: Make predictions for fight winners, methods, and rounds
 - **Leaderboards**: Compete with other users and track global rankings
 - **Personal Statistics**: Track your prediction accuracy, total points, and participation history
-- **Real-time Updates**: Live scoring and results tracking
+- **Real-time Updates**: Live scoring and results tracking (from an admin)
 
 ### 🛡️ Admin Features
 - **Event Management**: Create, edit, and manage UFC events
