@@ -89,6 +89,7 @@ export interface UserPick {
   user: string | {
     id: number;
     username: string;
+    avatar?: string;
   };
   event: string | Event;
   picks: Pick[];
@@ -106,6 +107,7 @@ export interface LeaderboardEntry {
   user: {
     id: number;
     username: string;
+    avatar?: string;
   };
   stats: {
     totalPoints: number;
@@ -141,6 +143,7 @@ export interface EventLeaderboardResponse {
     user: {
       id: number;
       username: string;
+      avatar?: string;
     };
     stats: {
       totalPoints: number;
@@ -195,5 +198,6 @@ export interface LeaderboardStats {
     rank: number;
     username: string;
     totalPoints: number;
+    avatar?: string;
   }>;
 } 

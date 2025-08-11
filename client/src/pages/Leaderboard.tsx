@@ -142,9 +142,17 @@ const Leaderboard: React.FC = () => {
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-bold text-white">
-                          {entry.user.username.charAt(0).toUpperCase()}
-                        </span>
+                        {entry.user.avatar ? (
+                          <img 
+                            src={entry.user.avatar} 
+                            alt={`@${entry.user.username}`}
+                            className="w-full h-full object-cover rounded-full"
+                          />
+                        ) : (
+                          <span className="text-sm font-bold text-white">
+                            {entry.user.username.charAt(0).toUpperCase()}
+                          </span>
+                        )}
                       </div>
                       <div>
                         <div className="font-medium text-white">

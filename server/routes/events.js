@@ -292,7 +292,7 @@ router.put('/:id/results', adminAuth, async (req, res) => {
       include: [{
         model: require('../models/User'),
         as: 'user',
-        attributes: ['id', 'username']
+        attributes: ['id', 'username', 'avatar']
       }]
     });
     const usersById = new Map();

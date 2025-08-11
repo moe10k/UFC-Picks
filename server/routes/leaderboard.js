@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
     // Get users with their stats, sorted by total points
     const { count, rows: users } = await User.findAndCountAll({
       where: { isActive: true },
-      attributes: ['id', 'username', 'totalPicks', 'correctPicks', 'totalPoints', 'eventsParticipated', 'bestEventScore', 'currentStreak', 'longestStreak'],
+      attributes: ['id', 'username', 'avatar', 'totalPicks', 'correctPicks', 'totalPoints', 'eventsParticipated', 'bestEventScore', 'currentStreak', 'longestStreak'],
       order: [['totalPoints', 'DESC'], ['correctPicks', 'DESC']],
       limit: parseInt(limit),
       offset: (parseInt(page) - 1) * parseInt(limit)
@@ -83,7 +83,8 @@ router.get('/', async (req, res) => {
       rank: (parseInt(page) - 1) * parseInt(limit) + index + 1,
       user: {
         id: user.id,
-        username: user.username
+        username: user.username,
+        avatar: user.avatar
       },
       stats: {
         totalPoints: user.totalPoints,
@@ -138,7 +139,7 @@ router.get('/event/:eventId', async (req, res) => {
       include: [{
         model: User,
         as: 'user',
-        attributes: ['id', 'username']
+        attributes: ['id', 'username', 'avatar']
       }],
       order: [['totalPoints', 'DESC'], ['correctPicks', 'DESC']],
       limit: parseInt(limit),
@@ -150,7 +151,8 @@ router.get('/event/:eventId', async (req, res) => {
       rank: (parseInt(page) - 1) * parseInt(limit) + index + 1,
       user: {
         id: pick.user.id,
-        username: pick.user.username
+        username: pick.user.username,
+        avatar: pick.user.avatar
       },
       stats: {
         totalPoints: pick.totalPoints,
@@ -225,7 +227,8 @@ router.get('/user/:userId', async (req, res) => {
     res.json({
       user: {
         id: user.id,
-        username: user.username
+        username: user.username,
+        avatar: user.avatar
       },
       stats: {
         globalRank: globalRank + 1,
@@ -273,7 +276,7 @@ router.get('/stats', async (req, res) => {
     // Get top 3 users
     const topUsers = await User.findAll({
       where: { isActive: true },
-      attributes: ['id', 'username', 'totalPoints'],
+      attributes: ['id', 'username', 'avatar', 'totalPoints'],
       order: [['totalPoints', 'DESC']],
       limit: 3
     });
@@ -286,7 +289,8 @@ router.get('/stats', async (req, res) => {
       topUsers: topUsers.map((user, index) => ({
         rank: index + 1,
         username: user.username,
-        totalPoints: user.totalPoints
+        totalPoints: user.totalPoints,
+        avatar: user.avatar
       }))
     });
   } catch (error) {
