@@ -1,52 +1,66 @@
 #!/usr/bin/env node
 
-/**
- * Heroku Database Setup Script
- * This script helps configure and test your Heroku database connection
- */
+const { sequelize } = require('./config/database');
+const User = require('./models/User');
+const Event = require('./models/Event');
+const Pick = require('./models/Pick');
 
-const { testConnection } = require('./config/database');
+console.log('🚀 Setting up UFC Picks database on Heroku...');
+console.log('');
 
-console.log('🚀 Heroku Database Setup Script');
-console.log('================================');
+const setupDatabase = async () => {
+  try {
+    // Test connection
+    console.log('🔍 Testing database connection...');
+    await sequelize.authenticate();
+    console.log('✅ Database connection successful!');
+    
+    // Sync all models
+    console.log('🔄 Syncing database models...');
+    await sequelize.sync({ force: false }); // Don't force, preserve existing data
+    console.log('✅ Database models synced successfully!');
+    
+    // Check if we need to seed initial data
+    const userCount = await User.count();
+    const eventCount = await Event.count();
+    
+    console.log(`📊 Current database state:`);
+    console.log(`   Users: ${userCount}`);
+    console.log(`   Events: ${eventCount}`);
+    
+    if (userCount === 0) {
+      console.log('🌱 No users found. You may want to create an admin user.');
+      console.log('💡 Use: heroku run npm run db:create-admin');
+    }
+    
+    if (eventCount === 0) {
+      console.log('🌱 No events found. You may want to seed some events.');
+      console.log('💡 Use: heroku run npm run db:seed');
+    }
+    
+    console.log('');
+    console.log('🎉 Heroku database setup complete!');
+    console.log('');
+    console.log('📋 Next steps:');
+    console.log('   1. Create an admin user: heroku run npm run db:create-admin');
+    console.log('   2. Seed events: heroku run npm run db:seed');
+    console.log('   3. Check database status: heroku run npm run db:status');
+    
+  } catch (error) {
+    console.error('❌ Database setup failed:', error.message);
+    console.log('');
+    console.log('🔧 Troubleshooting:');
+    console.log('   1. Check if DATABASE_URL is set: heroku config:get DATABASE_URL');
+    console.log('   2. Make sure you have a database addon:');
+    console.log('      heroku addons:create jawsdb:mini');
+    console.log('      or');
+    console.log('      heroku addons:create heroku-postgresql:mini');
+    console.log('   3. Set NODE_ENV: heroku config:set NODE_ENV=production');
+    process.exit(1);
+  } finally {
+    await sequelize.close();
+  }
+};
 
-// Check environment variables
-console.log('\n📋 Environment Check:');
-console.log(`NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
-console.log(`DATABASE_URL: ${process.env.DATABASE_URL ? '✅ Set' : '❌ Not set'}`);
-console.log(`PORT: ${process.env.PORT || 'not set'}`);
-
-if (!process.env.DATABASE_URL) {
-  console.log('\n❌ DATABASE_URL is not set!');
-  console.log('\n💡 To fix this:');
-  console.log('1. Add a database to your Heroku app:');
-  console.log('   heroku addons:create heroku-postgresql:mini');
-  console.log('   or');
-  console.log('   heroku addons:create jawsdb:mini');
-  console.log('\n2. Check your current config:');
-  console.log('   heroku config:get DATABASE_URL');
-  console.log('\n3. If you need to set it manually:');
-  console.log('   heroku config:set DATABASE_URL=your_database_url_here');
-} else {
-  console.log('\n✅ DATABASE_URL is configured');
-  console.log('\n🔗 Testing database connection...');
-  
-  // Test the connection
-  testConnection()
-    .then(() => {
-      console.log('\n🎉 Database connection successful!');
-      console.log('\n💡 Your app should now work on Heroku');
-    })
-    .catch((error) => {
-      console.error('\n❌ Database connection failed:', error.message);
-      console.log('\n💡 Troubleshooting tips:');
-      console.log('1. Check if your database addon is active:');
-      console.log('   heroku addons');
-      console.log('2. Verify your DATABASE_URL:');
-      console.log('   heroku config:get DATABASE_URL');
-      console.log('3. Check database status:');
-      console.log('   heroku pg:info');
-    });
-}
-
-console.log('\n📚 For more help, check the CLEANUP_README.md file');
+// Run setup
+setupDatabase();

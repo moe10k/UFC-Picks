@@ -4,9 +4,12 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-require('dotenv').config();
+// Only load .env file in development
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 
-const { sequelize, testConnection } = require('./config/database');
+const { sequelize, testConnection, reinitializeConnection } = require('./config/database');
 const setupAssociations = require('./models/associations');
 const authRoutes = require('./routes/auth');
 const eventRoutes = require('./routes/events');
@@ -80,7 +83,38 @@ if (process.env.NODE_ENV === 'production') {
 // Database connection and sync
 const initializeDatabase = async () => {
   try {
-    await testConnection();
+    // Additional check for production environment
+    if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
+      console.error('❌ DATABASE_URL is required in production environment');
+      console.error('💡 Make sure you have a database addon provisioned:');
+      console.error('   heroku addons:create jawsdb:mini');
+      process.exit(1);
+    }
+    
+    // Try to connect with retry mechanism
+    let retries = 3;
+    let lastError;
+    
+    while (retries > 0) {
+      try {
+        await testConnection();
+        break; // Success, exit retry loop
+      } catch (error) {
+        lastError = error;
+        retries--;
+        if (retries > 0) {
+          console.log(`⚠️ Database connection failed, retrying... (${retries} attempts left)`);
+          // Wait a bit before retrying
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Reinitialize connection in case environment variables were loaded late
+          reinitializeConnection();
+        }
+      }
+    }
+    
+    if (retries === 0) {
+      throw lastError;
+    }
     
     // Set up model associations before syncing
     setupAssociations();

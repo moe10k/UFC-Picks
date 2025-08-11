@@ -56,12 +56,19 @@ if (process.env.DATABASE_URL) {
   
   const parsedUrl = parseDatabaseUrl(process.env.DATABASE_URL);
   if (parsedUrl) {
-    // Determine dialect from protocol
-    const dialect = parsedUrl.protocol === 'postgres' ? 'postgres' : 'mysql';
+    // Determine dialect from protocol or host
+    let dialect = 'mysql'; // default
+    if (parsedUrl.protocol === 'postgres' || parsedUrl.protocol === 'postgresql') {
+      dialect = 'postgres';
+    } else if (parsedUrl.host && parsedUrl.host.includes('postgres')) {
+      dialect = 'postgres';
+    } else if (parsedUrl.host && parsedUrl.host.includes('jawsdb')) {
+      dialect = 'mysql';
+    }
     
     console.log(`🔗 Connecting to ${dialect} database at ${parsedUrl.host}:${parsedUrl.port}`);
     
-    sequelize = new Sequelize(process.env.DATABASE_URL, {
+    const config = {
       dialect: dialect,
       logging: process.env.NODE_ENV === 'production' ? false : console.log,
       define: {
@@ -73,17 +80,29 @@ if (process.env.DATABASE_URL) {
         min: 0,
         acquire: 30000,
         idle: 10000
-      },
-      dialectOptions: {
-        // Add SSL for production databases
-        ...(process.env.NODE_ENV === 'production' && {
+      }
+    };
+
+    // Add SSL configuration for production databases
+    if (process.env.NODE_ENV === 'production') {
+      if (dialect === 'postgres') {
+        config.dialectOptions = {
           ssl: {
             require: true,
             rejectUnauthorized: false
           }
-        })
+        };
+      } else if (dialect === 'mysql') {
+        config.dialectOptions = {
+          ssl: {
+            require: true,
+            rejectUnauthorized: false
+          }
+        };
       }
-    });
+    }
+
+    sequelize = new Sequelize(process.env.DATABASE_URL, config);
   } else {
     console.error('❌ Failed to parse DATABASE_URL, falling back to local config');
     sequelize = new Sequelize(mysqlConfig);
@@ -117,6 +136,10 @@ const testConnection = async () => {
     if (process.env.DATABASE_URL) {
       console.error('💡 Check your DATABASE_URL environment variable');
       console.error('💡 Try: heroku config:get DATABASE_URL');
+      console.error('💡 Make sure you have a database addon:');
+      console.error('   heroku addons:create jawsdb:mini');
+      console.error('   or');
+      console.error('   heroku addons:create heroku-postgresql:mini');
     } else {
       console.error('💡 Make sure your MySQL server is running and credentials are correct');
     }
