@@ -41,6 +41,15 @@ const mysqlConfig = {
   }
 };
 
+// Debug environment variables
+console.log('🔍 Database Configuration Debug:');
+console.log(`NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+console.log(`DATABASE_URL: ${process.env.DATABASE_URL ? '✅ Set' : '❌ Not set'}`);
+console.log(`DB_HOST: ${process.env.DB_HOST || 'not set'}`);
+console.log(`DB_PORT: ${process.env.DB_PORT || 'not set'}`);
+console.log(`DB_USER: ${process.env.DB_USER || 'not set'}`);
+console.log(`DB_NAME: ${process.env.DB_NAME || 'not set'}`);
+
 // If DATABASE_URL is provided (e.g., from Heroku), use it
 if (process.env.DATABASE_URL) {
   console.log('🌐 Using DATABASE_URL from environment');
@@ -81,6 +90,10 @@ if (process.env.DATABASE_URL) {
   }
 } else {
   console.log('🏠 Using local MySQL configuration');
+  console.log('💡 To use Heroku database, add a database addon:');
+  console.log('   heroku addons:create jawsdb:mini');
+  console.log('   or');
+  console.log('   heroku addons:create heroku-postgresql:mini');
   sequelize = new Sequelize(mysqlConfig);
 }
 

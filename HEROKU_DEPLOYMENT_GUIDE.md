@@ -70,7 +70,6 @@ heroku logs --tail
 heroku addons
 
 # If no database addon exists, add one:
-heroku addons:create heroku-postgresql:mini
 ```
 
 ### If connection still fails:
@@ -131,16 +130,6 @@ If automatic setup fails, you can manually create tables:
 ```bash
 # Connect to your database
 heroku pg:psql
-
-# Create tables manually (Postgres example)
-CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
-  username VARCHAR(255) UNIQUE NOT NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 ```
 
 ---
