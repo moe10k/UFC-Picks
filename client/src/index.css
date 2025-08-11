@@ -53,6 +53,14 @@
     @apply bg-ufc-gray rounded-lg p-6 border border-gray-600 hover:border-ufc-red transition-all duration-200;
   }
   
+  .countdown-item {
+    @apply bg-ufc-dark rounded-lg p-3 border border-gray-600 text-center;
+  }
+  
+  .stat-item {
+    @apply bg-ufc-dark rounded-lg p-4 border border-gray-600 text-center hover:border-ufc-red transition-all duration-200;
+  }
+  
   .gradient-text {
     @apply bg-gradient-to-r from-ufc-red to-ufc-gold bg-clip-text text-transparent;
   }

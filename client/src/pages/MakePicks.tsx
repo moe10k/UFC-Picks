@@ -134,7 +134,7 @@ const MakePicks: React.FC = () => {
       });
       
       toast.success(existingPick ? 'Picks updated successfully!' : 'Picks submitted successfully!');
-      navigate(`/event/${id}`);
+      navigate('/my-picks');
     } catch (error: any) {
       const message = error.response?.data?.message || (existingPick ? 'Failed to update picks' : 'Failed to submit picks');
       toast.error(message);
