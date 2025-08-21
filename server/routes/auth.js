@@ -5,6 +5,8 @@ const { Op } = require('sequelize');
 const { sequelize } = require('../config/database');
 const User = require('../models/User');
 const { auth, adminAuth } = require('../middleware/auth');
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
 
 const router = express.Router();
 
@@ -14,6 +16,27 @@ const generateToken = (userId) => {
     expiresIn: process.env.JWT_EXPIRE || '24h'
   });
 };
+
+// Configure Cloudinary (only if credentials provided)
+if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+}
+
+// Multer config for in-memory storage and basic limits
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files are allowed'));
+    }
+    cb(null, true);
+  }
+});
 
 // @route   POST /api/auth/register
 // @desc    Register a new user
@@ -316,6 +339,64 @@ router.put('/profile', auth, [
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ message: 'Server error updating profile' });
+  }
+});
+
+// @route   POST /api/auth/avatar
+// @desc    Upload avatar image and update user's avatar URL
+// @access  Private
+router.post('/avatar', auth, upload.single('avatar'), async (req, res) => {
+  try {
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      return res.status(500).json({ message: 'Image upload service not configured' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const mimeType = req.file.mimetype || '';
+    if (!mimeType.startsWith('image/')) {
+      return res.status(400).json({ message: 'Only image files are allowed' });
+    }
+
+    // Convert buffer to data URI for Cloudinary
+    const base64 = req.file.buffer.toString('base64');
+    const dataUri = `data:${mimeType};base64,${base64}`;
+
+    const uploadOptions = {
+      folder: 'ufc-picks/avatars',
+      public_id: `user_${user.id}_${Date.now()}`,
+      resource_type: 'image',
+      overwrite: true,
+    };
+
+    const uploadResult = await cloudinary.uploader.upload(dataUri, uploadOptions);
+
+    await user.update({ avatar: uploadResult.secure_url });
+
+    return res.json({
+      message: 'Avatar uploaded successfully',
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        avatar: user.avatar,
+        createdAt: user.createdAt,
+        stats: user.getStats()
+      }
+    });
+  } catch (error) {
+    console.error('Avatar upload error:', error);
+    if (error.message && error.message.includes('File too large')) {
+      return res.status(400).json({ message: 'File too large. Max size is 2MB.' });
+    }
+    return res.status(500).json({ message: 'Server error uploading avatar' });
   }
 });
 

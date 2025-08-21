@@ -98,6 +98,7 @@ interface AuthContextType extends AuthState {
   updateProfile: (profileData: {
     avatar?: string;
   }) => Promise<void>;
+  uploadAvatar: (file: File) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -194,12 +195,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const uploadAvatar = async (file: File) => {
+    try {
+      const { user } = await authAPI.uploadAvatar(file);
+      localStorage.setItem('user', JSON.stringify(user));
+      dispatch({ type: 'UPDATE_USER', payload: user });
+    } catch (error) {
+      console.error('Avatar upload failed:', error);
+      throw error;
+    }
+  };
+
   const value: AuthContextType = {
     ...state,
     login,
     register,
     logout,
     updateProfile,
+    uploadAvatar,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

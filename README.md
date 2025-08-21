@@ -114,6 +114,11 @@ A full-stack web application for making and tracking UFC fight predictions. User
    
    # Logging
    LOG_LEVEL=info
+
+   # Optional: Cloudinary for avatar uploads
+   CLOUDINARY_CLOUD_NAME=your_cloud_name
+   CLOUDINARY_API_KEY=your_api_key
+   CLOUDINARY_API_SECRET=your_api_secret
    ```
 
 4. **Set up MySQL database**
@@ -172,6 +177,7 @@ A full-stack web application for making and tracking UFC fight predictions. User
 - `POST /api/auth/login` - Login user
 - `GET /api/auth/profile` - Get user profile
 - `PUT /api/auth/profile` - Update user profile
+- `POST /api/auth/avatar` - Upload avatar image (requires Cloudinary)
 - `GET /api/auth/users` - Get all users (Admin only)
 - `PUT /api/auth/users/:userId/role` - Update user role (Admin only)
 - `PUT /api/auth/users/:userId/status` - Update user status (Admin only)

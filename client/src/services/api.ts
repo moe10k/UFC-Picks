@@ -82,6 +82,15 @@ export const authAPI = {
     return response.data;
   },
 
+  uploadAvatar: async (file: File): Promise<AuthResponse> => {
+    const form = new FormData();
+    form.append('avatar', file);
+    const response = await api.post('/auth/avatar', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
   // Admin user management
   getUsers: async (params?: {
     page?: number;
