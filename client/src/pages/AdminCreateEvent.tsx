@@ -305,7 +305,6 @@ const AdminCreateEvent: React.FC = () => {
                 value={newFight.weightClass}
                 onChange={(e) => setNewFight(prev => ({ ...prev, weightClass: e.target.value }))}
                 className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-                required
               >
                 <option value="">Select weight class</option>
                 {weightClasses.map(wc => (
@@ -359,7 +358,6 @@ const AdminCreateEvent: React.FC = () => {
                     onChange={(e) => handleFighterChange(1, 'name', e.target.value)}
                     className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
                     placeholder="Fighter Name"
-                    required
                   />
                 </div>
                 
@@ -433,7 +431,6 @@ const AdminCreateEvent: React.FC = () => {
                     onChange={(e) => handleFighterChange(2, 'name', e.target.value)}
                     className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
                     placeholder="Fighter Name"
-                    required
                   />
                 </div>
                 

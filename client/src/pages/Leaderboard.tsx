@@ -118,13 +118,12 @@ const Leaderboard: React.FC = () => {
                 <th className="text-center py-4 px-6 text-gray-300 font-medium">Total Points</th>
                 <th className="text-center py-4 px-6 text-gray-300 font-medium">Accuracy</th>
                 <th className="text-center py-4 px-6 text-gray-300 font-medium">Picks</th>
-                {!eventId && (
-                  <>
-                    <th className="text-center py-4 px-6 text-gray-300 font-medium">Events</th>
-                    <th className="text-center py-4 px-6 text-gray-300 font-medium">Best Score</th>
-                    <th className="text-center py-4 px-6 text-gray-300 font-medium">Streak</th>
-                  </>
-                )}
+                                 {!eventId && (
+                   <>
+                     <th className="text-center py-4 px-6 text-gray-300 font-medium">Events</th>
+                     <th className="text-center py-4 px-6 text-gray-300 font-medium">Best Score</th>
+                   </>
+                 )}
               </tr>
             </thead>
             <tbody>
@@ -158,9 +157,6 @@ const Leaderboard: React.FC = () => {
                         <div className="font-medium text-white">
                           @{entry.user.username}
                         </div>
-                        <div className="text-sm text-gray-400">
-                          User #{entry.user.id}
-                        </div>
                       </div>
                     </div>
                   </td>
@@ -183,27 +179,21 @@ const Leaderboard: React.FC = () => {
                     </span>
                   </td>
                   
-                  {!eventId && (
-                    <>
-                      <td className="py-4 px-6 text-center">
-                        <span className="text-gray-300">
-                          {entry.stats.eventsParticipated}
-                        </span>
-                      </td>
-                      
-                      <td className="py-4 px-6 text-center">
-                        <span className="text-gray-300">
-                          {entry.stats.bestEventScore}
-                        </span>
-                      </td>
-                      
-                      <td className="py-4 px-6 text-center">
-                        <span className="text-gray-300">
-                          {entry.stats.currentStreak}
-                        </span>
-                      </td>
-                    </>
-                  )}
+                                     {!eventId && (
+                     <>
+                       <td className="py-4 px-6 text-center">
+                         <span className="text-gray-300">
+                           {entry.stats.eventsParticipated}
+                         </span>
+                       </td>
+                       
+                       <td className="py-4 px-6 text-center">
+                         <span className="text-gray-300">
+                           {entry.stats.bestEventScore}
+                         </span>
+                       </td>
+                     </>
+                   )}
                 </tr>
               ))}
             </tbody>
