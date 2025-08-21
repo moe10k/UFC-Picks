@@ -4,45 +4,55 @@ import { UserIcon, PencilIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
 const Profile: React.FC = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, uploadAvatar } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    avatar: user?.avatar || ''
-  });
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  const handleCancel = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setIsEditing(false);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    setIsLoading(true);
-    
-    try {
-      await updateProfile({
-        avatar: formData.avatar || undefined
-      });
-      
-      toast.success('Profile updated successfully!');
-      setIsEditing(false);
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to update profile';
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select an image file');
+        return;
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('File too large. Max 2MB');
+        return;
+      }
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    } else {
+      setSelectedFile(null);
+      setPreviewUrl(null);
     }
   };
 
-  const handleCancel = () => {
-    setFormData({
-      avatar: user?.avatar || ''
-    });
-    setIsEditing(false);
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      toast.error('No file selected');
+      return;
+    }
+    setUploading(true);
+    try {
+      await uploadAvatar(selectedFile);
+      toast.success('Avatar uploaded!');
+      setSelectedFile(null);
+      setPreviewUrl(null);
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Failed to upload avatar';
+      toast.error(message);
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (!user) {
@@ -99,29 +109,35 @@ const Profile: React.FC = () => {
         <div className="card">
           <h2 className="text-xl font-bold text-white mb-6">Edit Profile</h2>
           
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-6">
             <div>
-              <label htmlFor="avatar" className="block text-sm font-medium text-gray-300 mb-2">
-                Avatar URL (Optional)
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Upload an image (max 2MB)
               </label>
-              <input
-                id="avatar"
-                name="avatar"
-                type="url"
-                value={formData.avatar}
-                onChange={handleChange}
-                className="input-field"
-                placeholder="https://example.com/avatar.jpg"
-              />
+              <div className="flex items-center gap-4">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="text-gray-300"
+                />
+              </div>
+              {previewUrl && (
+                <div className="mt-4 flex items-center gap-4">
+                  <img src={previewUrl} alt="Preview" className="w-16 h-16 rounded-full object-cover" />
+                  <span className="text-gray-400 text-sm">Preview</span>
+                </div>
+              )}
             </div>
             
             <div className="flex gap-4">
               <button
-                type="submit"
-                disabled={isLoading}
+                type="button"
+                onClick={handleUpload}
+                disabled={!selectedFile || uploading}
                 className="btn-primary"
               >
-                {isLoading ? 'Saving...' : 'Save Changes'}
+                {uploading ? 'Uploading...' : 'Upload Avatar'}
               </button>
               
               <button
@@ -132,7 +148,7 @@ const Profile: React.FC = () => {
                 Cancel
               </button>
             </div>
-          </form>
+          </div>
         </div>
       )}
 
