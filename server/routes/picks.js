@@ -207,15 +207,21 @@ router.get('/user/:userId', auth, async (req, res) => {
 });
 
 // @route   GET /api/picks/event/:eventId
-// @desc    Get all picks for an event (Admin only)
-// @access  Private/Admin
+// @desc    Get all picks for an event (Users can see picks for events they're participating in)
+// @access  Private
 router.get('/event/:eventId', auth, async (req, res) => {
   try {
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
-
     const { eventId } = req.params;
+
+    // Check if user has picks for this event (they're participating)
+    const userPick = await Pick.findOne({
+      where: { user_id: req.user.id, event_id: eventId }
+    });
+
+    // If user is not participating in this event, only admins can view picks
+    if (!userPick && !req.user.isAdmin) {
+      return res.status(403).json({ message: 'You must participate in this event to view other players picks' });
+    }
 
     const picks = await Pick.findAll({
       where: { event_id: eventId },
