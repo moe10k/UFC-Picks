@@ -192,57 +192,37 @@ const MyPicks: React.FC = () => {
                           <span className={`px-3 py-1 rounded-full text-sm font-medium bg-gray-800 ${getStatusColor(status)}`}>
                             {status}
                           </span>
-                          <span className="text-gray-400">|</span>
-                          <Link 
-                            to={`/event/${event.id}`}
-                            className="btn-outline text-sm py-1 px-3"
-                          >
-                            View Event
-                          </Link>
+                                                     <span className="text-gray-400">|</span>
+                           {event.status === 'completed' && (
+                             <Link 
+                               to={`/leaderboard/event/${event.id}`}
+                               className="btn-outline text-sm py-1 px-3"
+                             >
+                               View Results
+                             </Link>
+                           )}
                         </>
                       )}
                     </div>
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-ufc-red">
-                          {pick.totalPoints}
-                        </div>
-                        <div className="text-gray-400 text-sm">Points</div>
-                      </div>
-                      
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-green-400">
-                          {pick.correctPicks}/{pick.picks.length}
-                        </div>
-                        <div className="text-gray-400 text-sm">Correct</div>
-                      </div>
-                      
-                      <div className="text-center">
-                        <div className={`text-2xl font-bold ${getAccuracyColor(pick.accuracy || '0%')}`}>
-                          {pick.accuracy || '0%'}
-                        </div>
-                        <div className="text-gray-400 text-sm">Accuracy</div>
-                      </div>
-                    </div>
+
                   </div>
                   
-                  <div className="lg:flex-shrink-0 flex gap-3">
-                    {event && event.status === 'completed' && (
-                      <Link 
-                        to={`/leaderboard/event/${event.id}`}
-                        className="btn-secondary"
-                      >
-                        View Results
-                      </Link>
-                    )}
-                  </div>
+                  
                 </div>
 
                 {/* Pick Details */}
                 {pick.picks.length > 0 && (
                   <div className="mt-6 pt-6 border-t border-gray-700">
-                    <h4 className="text-lg font-bold text-white mb-4">Your Predictions</h4>
+                    <div className="flex items-center gap-4 mb-4">
+                      <h4 className="text-lg font-bold text-white">Your Predictions</h4>
+                      <span className="text-gray-400">|</span>
+                      <span className="text-ufc-red font-semibold">{pick.totalPoints} Points</span>
+                      <span className="text-gray-400">|</span>
+                      <span className="text-green-400 font-semibold">{pick.correctPicks}/{pick.picks.length} Correct</span>
+                      <span className="text-gray-400">|</span>
+                      <span className={`font-semibold ${getAccuracyColor(pick.accuracy || '0%')}`}>{pick.accuracy || '0%'} Accuracy</span>
+                    </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                       {pick.picks.map((fightPick, index) => {
@@ -282,20 +262,21 @@ const MyPicks: React.FC = () => {
                                   </span>
                                 </div>
                                 
-                                {fight.result && (
-                                  <div className="mt-3 pt-3 border-t border-gray-700">
-                                    <div className="flex items-center gap-2">
-                                      {fight.result.winner === fightPick.winner ? (
-                                        <CheckCircleIcon className="h-4 w-4 text-green-400" />
-                                      ) : (
-                                        <XCircleIcon className="h-4 w-4 text-red-400" />
-                                      )}
-                                      <span className="text-xs text-gray-400">
-                                        Actual: {fight.result.winner === 'fighter1' ? fight.fighter1.name : fight.fighter2.name} - {fight.result.method} (R{fight.result.round})
-                                      </span>
-                                    </div>
-                                  </div>
-                                )}
+                                                                 {fight.result && (
+                                   <div className="mt-3 pt-3 border-t border-gray-700">
+                                     <div className="flex items-center gap-2">
+                                       {fight.result.winner === fightPick.winner ? (
+                                         <CheckCircleIcon className="h-4 w-4 text-green-400" />
+                                       ) : (
+                                         <XCircleIcon className="h-4 w-4 text-red-400" />
+                                       )}
+                                       <span className="text-xs text-gray-400">
+                                         Actual: {fight.result.winner === 'fighter1' ? fight.fighter1.name : fight.fighter2.name} - {fight.result.method}
+                                         {fight.result.method !== 'Decision' && ` (R${fight.result.round})`}
+                                       </span>
+                                     </div>
+                                   </div>
+                                 )}
                               </div>
                             )}
                           </div>
@@ -308,19 +289,19 @@ const MyPicks: React.FC = () => {
                 {/* Other Users Picks Section */}
                 {event && (
                   <div className="mt-6 pt-6 border-t border-gray-700">
-                    <button
-                      onClick={() => toggleEventExpanded(event.id)}
-                      className="flex items-center justify-between w-full text-left mb-4 group"
-                    >
-                      <h4 className="text-lg font-bold text-white group-hover:text-ufc-red transition-colors">
-                        Other Players' Picks ({otherUsersPicks[event.id]?.totalPlayers || 0} players)
-                      </h4>
-                      {expandedEvents.has(event.id) ? (
-                        <ChevronUpIcon className="h-5 w-5 text-gray-400 group-hover:text-ufc-red transition-colors" />
-                      ) : (
-                        <ChevronDownIcon className="h-5 w-5 text-gray-400 group-hover:text-ufc-red transition-colors" />
-                      )}
-                    </button>
+                                         <button
+                       onClick={() => toggleEventExpanded(event.id)}
+                       className="flex items-center gap-2 text-left mb-4 group"
+                     >
+                       <h4 className="text-lg font-bold text-white group-hover:text-ufc-red transition-colors">
+                         Other Players' Picks
+                       </h4>
+                       {expandedEvents.has(event.id) ? (
+                         <ChevronUpIcon className="h-5 w-5 text-gray-400 group-hover:text-ufc-red transition-colors" />
+                       ) : (
+                         <ChevronDownIcon className="h-5 w-5 text-gray-400 group-hover:text-ufc-red transition-colors" />
+                       )}
+                     </button>
 
                     {expandedEvents.has(event.id) && (
                       <div className="space-y-4">
@@ -330,62 +311,57 @@ const MyPicks: React.FC = () => {
                           </div>
                         ) : otherUsersPicks[event.id]?.picks && otherUsersPicks[event.id].picks.length > 0 ? (
                           <>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                              {otherUsersPicks[event.id].picks.map((userPick, index) => {
-                                const username = typeof userPick.user === 'string' ? userPick.user : userPick.user.username;
-                                const isCurrentUser = typeof userPick.user === 'string' ? false : userPick.user.username === currentUser?.username;
-                                
-                                return (
-                                  <div key={userPick.id} className={`bg-gray-800 rounded-lg p-4 ${isCurrentUser ? 'ring-2 ring-ufc-red' : ''}`}>
-                                    <div className="flex items-center justify-between mb-3">
-                                      <span className="text-sm font-medium text-white">
-                                        {username}
-                                        {isCurrentUser && <span className="ml-2 text-xs text-ufc-red">(You)</span>}
-                                      </span>
-                                      <div className="text-right">
-                                        <div className="text-sm font-medium text-ufc-red">
-                                          {userPick.totalPoints} pts
-                                        </div>
-                                        <div className="text-xs text-gray-400">
-                                          {userPick.correctPicks}/{userPick.picks.length} correct
-                                        </div>
-                                      </div>
-                                    </div>
-                                    
-                                    <div className="space-y-2">
-                                      {userPick.picks.slice(0, 3).map((fightPick, fightIndex) => {
-                                        const fight = event.fights.find(f => f.fightNumber === fightPick.fightNumber);
-                                        return (
-                                          <div key={fightIndex} className="text-xs">
-                                            <div className="flex justify-between">
-                                              <span className="text-gray-400">Fight {fightPick.fightNumber}:</span>
-                                              <span className="text-white">
-                                                {fightPick.winner === 'fighter1' ? fight?.fighter1.name : fight?.fighter2.name}
-                                              </span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                              <span className="text-gray-400">Method:</span>
-                                              <span className="text-white">{fightPick.method}</span>
-                                            </div>
-                                            {fightPick.method !== 'Decision' && (
-                                              <div className="flex justify-between">
-                                                <span className="text-gray-400">Round:</span>
-                                                <span className="text-white">{fightPick.round}</span>
-                                              </div>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
-                                      {userPick.picks.length > 3 && (
-                                        <div className="text-xs text-gray-400 text-center pt-2 border-t border-gray-700">
-                                          +{userPick.picks.length - 3} more fights
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                                                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                               {otherUsersPicks[event.id].picks.map((userPick, index) => {
+                                 const username = typeof userPick.user === 'string' ? userPick.user : userPick.user.username;
+                                 const isCurrentUser = typeof userPick.user === 'string' ? false : userPick.user.username === currentUser?.username;
+                                 
+                                 return (
+                                   <div key={userPick.id} className={`bg-gray-800 rounded-lg p-4 ${isCurrentUser ? 'ring-2 ring-ufc-red' : ''}`}>
+                                     <div className="flex items-center justify-between mb-3">
+                                       <span className="text-sm font-medium text-white">
+                                         {username}
+                                         {isCurrentUser && <span className="ml-2 text-xs text-ufc-red">(You)</span>}
+                                       </span>
+                                       <div className="text-right">
+                                         <div className="text-sm font-medium text-ufc-red">
+                                           {userPick.totalPoints} pts
+                                         </div>
+                                         <div className="text-xs text-gray-400">
+                                           {userPick.correctPicks}/{userPick.picks.length} correct
+                                         </div>
+                                       </div>
+                                     </div>
+                                     
+                                     <div className="space-y-2">
+                                       {userPick.picks.map((fightPick, fightIndex) => {
+                                         const fight = event.fights.find(f => f.fightNumber === fightPick.fightNumber);
+                                         return (
+                                           <div key={fightIndex} className="text-xs">
+                                             <div className="flex justify-between">
+                                               <span className="text-gray-400">Fight {fightPick.fightNumber}:</span>
+                                               <span className="text-white">
+                                                 {fightPick.winner === 'fighter1' ? fight?.fighter1.name : fight?.fighter2.name}
+                                               </span>
+                                             </div>
+                                             <div className="flex justify-between">
+                                               <span className="text-gray-400">Method:</span>
+                                               <span className="text-white">{fightPick.method}</span>
+                                             </div>
+                                             {fightPick.method !== 'Decision' && (
+                                               <div className="flex justify-between">
+                                                 <span className="text-gray-400">Round:</span>
+                                                 <span className="text-white">{fightPick.round}</span>
+                                               </div>
+                                             )}
+                                           </div>
+                                         );
+                                       })}
+                                     </div>
+                                   </div>
+                                 );
+                               })}
+                             </div>
 
                             {/* Pagination */}
                             {otherUsersPicks[event.id].totalPages > 1 && (
