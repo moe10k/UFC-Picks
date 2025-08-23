@@ -191,34 +191,31 @@ const Security: React.FC = () => {
             </div>
             
             {/* Password Requirements */}
-            {newPassword.length > 0 && (
-              <div className="mt-3 p-3 bg-black/20 rounded-lg border border-white/10">
-                <p className="text-xs font-medium text-gray-200 mb-2">Password Requirements:</p>
-                <div className="space-y-1">
-                  {passwordRequirements.map((requirement) => {
-                    const isMet = requirement.test(newPassword);
-                    return (
-                      <div key={requirement.id} className="flex items-center space-x-2">
-                        <div className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${
-                          isMet ? 'bg-green-500' : 'bg-gray-500'
-                        }`}>
-                          {isMet ? (
-                            <CheckIcon className="w-3 h-3 text-white" />
-                          ) : (
-                            <XMarkIcon className="w-3 h-3 text-white" />
-                          )}
-                        </div>
-                        <span className={`text-xs ${
-                          isMet ? 'text-green-300' : 'text-gray-400'
-                        }`}>
-                          {requirement.label}
-                        </span>
+            <div className="mt-3 p-3 bg-black/20 rounded-lg border border-white/10">
+              <div className="space-y-1">
+                {passwordRequirements.map((requirement) => {
+                  const isMet = requirement.test(newPassword);
+                  return (
+                    <div key={requirement.id} className="flex items-center space-x-2">
+                      <div className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${
+                        isMet ? 'bg-green-500' : 'bg-gray-500'
+                      }`}>
+                        {isMet ? (
+                          <CheckIcon className="w-3 h-3 text-white" />
+                        ) : (
+                          <XMarkIcon className="w-3 h-3 text-white" />
+                        )}
                       </div>
-                    );
-                  })}
-                </div>
+                      <span className={`text-xs ${
+                        isMet ? 'text-green-300' : 'text-gray-400'
+                      }`}>
+                        {requirement.label}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-            )}
+            </div>
           </div>
 
           <div>
@@ -255,10 +252,10 @@ const Security: React.FC = () => {
             </div>
             
             {/* Password Match Indicator */}
-            {confirmPassword.length > 0 && (
-              <div className="mt-2 flex items-center space-x-2">
+            <div className="mt-3 p-3 bg-black/20 rounded-lg border border-white/10">
+              <div className="flex items-center space-x-2">
                 <div className={`flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${
-                  doPasswordsMatch ? 'bg-green-500' : 'bg-red-500'
+                  doPasswordsMatch ? 'bg-green-500' : 'bg-gray-500'
                 }`}>
                   {doPasswordsMatch ? (
                     <CheckIcon className="w-3 h-3 text-white" />
@@ -267,12 +264,12 @@ const Security: React.FC = () => {
                   )}
                 </div>
                 <span className={`text-xs ${
-                  doPasswordsMatch ? 'text-green-300' : 'text-red-300'
+                  doPasswordsMatch ? 'text-green-300' : 'text-gray-400'
                 }`}>
-                  {doPasswordsMatch ? 'Passwords match' : 'Passwords do not match'}
+                  Passwords must match
                 </span>
               </div>
-            )}
+            </div>
           </div>
 
           <div className="flex justify-end">
