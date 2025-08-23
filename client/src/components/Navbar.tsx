@@ -15,7 +15,8 @@ import {
   ChartBarIcon,
   PencilIcon,
   ShieldCheckIcon,
-  EyeIcon
+  EyeIcon,
+  ShoppingBagIcon
 } from '@heroicons/react/24/outline';
 
 const Navbar: React.FC = () => {
@@ -56,6 +57,7 @@ const Navbar: React.FC = () => {
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
     { name: 'Leaderboard', href: '/leaderboard', icon: TrophyIcon },
     { name: 'My Picks', href: '/my-picks', icon: UserIcon },
+    { name: 'Store', href: '/store', icon: ShoppingBagIcon, comingSoon: true },
   ];
 
   const adminOptions = [
@@ -92,6 +94,23 @@ const Navbar: React.FC = () => {
           <div className="hidden md:flex items-center space-x-8">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
+              const isComingSoon = item.comingSoon;
+              
+              if (isComingSoon) {
+                return (
+                  <div
+                    key={item.name}
+                    className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-400 cursor-not-allowed opacity-60"
+                  >
+                    <item.icon className="w-5 h-5 mr-2" />
+                    {item.name}
+                    <span className="ml-2 px-2 py-0.5 bg-gray-600 text-xs font-semibold rounded-full">
+                      Coming Soon
+                    </span>
+                  </div>
+                );
+              }
+              
               return (
                 <Link
                   key={item.name}
@@ -238,6 +257,23 @@ const Navbar: React.FC = () => {
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-ufc-gray border-t border-gray-700">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
+              const isComingSoon = item.comingSoon;
+              
+              if (isComingSoon) {
+                return (
+                  <div
+                    key={item.name}
+                    className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-400 cursor-not-allowed opacity-60"
+                  >
+                    <item.icon className="w-5 h-5 mr-3" />
+                    {item.name}
+                    <span className="ml-2 px-2 py-0.5 bg-gray-600 text-xs font-semibold rounded-full">
+                      Coming Soon
+                    </span>
+                  </div>
+                );
+              }
+              
               return (
                 <Link
                   key={item.name}

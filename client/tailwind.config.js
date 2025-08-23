@@ -27,6 +27,12 @@ module.exports = {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         display: ['Poppins', 'system-ui', 'sans-serif']
       },
+      boxShadow: {
+        'ufc-red': '0 10px 25px -3px rgba(210, 10, 17, 0.3), 0 4px 6px -2px rgba(210, 10, 17, 0.1)',
+        'ufc-red/20': '0 10px 25px -3px rgba(210, 10, 17, 0.2), 0 4px 6px -2px rgba(210, 10, 17, 0.1)',
+        'ufc-red/30': '0 10px 25px -3px rgba(210, 10, 17, 0.3), 0 4px 6px -2px rgba(210, 10, 17, 0.1)',
+        'ufc-red/10': '0 4px 6px -1px rgba(210, 10, 17, 0.1), 0 2px 4px -1px rgba(210, 10, 17, 0.06)',
+      },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',
         'slide-up': 'slideUp 0.3s ease-out',

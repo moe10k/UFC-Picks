@@ -14,6 +14,39 @@
     background-attachment: fixed;
     background-repeat: no-repeat;
   }
+  
+  /* Improve dropdown text visibility */
+  select option {
+    background-color: #1A1A1A !important;
+    color: white !important;
+    padding: 8px 12px;
+  }
+  
+  select option:hover {
+    background-color: #D20A11 !important;
+  }
+  
+  select option:checked {
+    background-color: #D20A11 !important;
+    color: white !important;
+  }
+  
+  /* Ensure VS section is properly centered */
+  .vs-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+  
+  /* Improve select element styling */
+  select {
+    color: white !important;
+  }
+  
+  select:focus {
+    color: white !important;
+  }
 }
 
 @layer components {
@@ -49,6 +82,10 @@
     @apply bg-gradient-to-br from-ufc-gray to-gray-800 rounded-lg p-4 border border-gray-600 hover:border-ufc-red transition-all duration-200;
   }
   
+  .fighter-card-enhanced {
+    @apply bg-gradient-to-br from-ufc-gray/50 to-gray-800/50 rounded-xl p-6 border border-gray-600/30 hover:border-ufc-red/50 transition-all duration-300 hover:shadow-lg hover:shadow-ufc-red/10;
+  }
+  
   .fight-card {
     @apply bg-ufc-gray rounded-lg p-6 border border-gray-600 hover:border-ufc-red transition-all duration-200;
   }
@@ -75,6 +112,18 @@
   
   .form-input-enhanced {
     @apply w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-ufc-red focus:border-ufc-red transition-all duration-200;
+  }
+  
+  .winner-option {
+    @apply cursor-pointer;
+  }
+  
+  .winner-option-content {
+    @apply p-4 bg-gradient-to-r from-ufc-dark to-gray-800 border border-gray-600/50 rounded-xl text-white hover:border-ufc-red hover:shadow-lg hover:shadow-ufc-red/20 transition-all duration-300 hover:scale-105;
+  }
+  
+  .winner-option input:checked + .winner-option-content {
+    @apply border-ufc-red bg-gradient-to-r from-ufc-red/20 to-red-600/20 shadow-lg shadow-ufc-red/20;
   }
 }
 
