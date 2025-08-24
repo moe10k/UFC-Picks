@@ -13,8 +13,10 @@ import {
   PencilIcon,
   TrashIcon,
   EyeIcon,
-  TrashIcon as TrashIconSolid
+  TrashIcon as TrashIconSolid,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
+import { getActualEventStatus, getEventStatusColor } from '../utils/eventStatus';
 
 const AdminEvents: React.FC = () => {
   const { user } = useAuth();
@@ -125,32 +127,53 @@ const AdminEvents: React.FC = () => {
     }
   };
 
+  const handleFixCompletedStatus = async () => {
+    if (!window.confirm('This will fix the status of all events that have completed fights but incorrect status. Continue?')) {
+      return;
+    }
+
+    try {
+      const result = await eventsAPI.fixCompletedStatus();
+      toast.success(`Fixed ${result.updatedEvents.length} events. Total completed events: ${result.completedEvents}`);
+      fetchEvents();
+      fetchDeletedEvents();
+      checkOrphanedPicks();
+    } catch (error: any) {
+      toast.error('Failed to fix completed events status');
+    }
+  };
+
   const filteredEvents = events.filter(event => {
     if (filter === 'all') return true;
-    return event.status === filter;
+    const actualStatus = getActualEventStatus(event);
+    return actualStatus === filter;
   });
 
-  const getEventStatusColor = (status: string) => {
-    switch (status) {
-      case 'upcoming': return 'bg-green-600 text-white';
-      case 'completed': return 'bg-blue-600 text-white';
-      case 'live': return 'bg-red-600 text-white';
-      default: return 'bg-gray-600 text-white';
-    }
-  };
-
-  const getResultsStatus = (event: EventWithFights) => {
-    const completedFights = event.fights.filter(fight => fight.isCompleted).length;
-    const totalFights = event.fights.length;
+  // Sort events by status priority: live first, then upcoming, then completed
+  const sortedEvents = [...filteredEvents].sort((a, b) => {
+    const statusA = getActualEventStatus(a);
+    const statusB = getActualEventStatus(b);
     
-    if (completedFights === 0) {
-      return { text: 'No Results', color: 'text-gray-400', bgColor: 'bg-gray-700' };
-    } else if (completedFights === totalFights) {
-      return { text: 'Complete', color: 'text-green-400', bgColor: 'bg-green-700' };
-    } else {
-      return { text: 'Partial', color: 'text-yellow-400', bgColor: 'bg-yellow-700' };
+    // Define status priority order
+    const statusPriority = { live: 1, upcoming: 2, completed: 3 };
+    
+    // Sort by status priority first
+    if (statusPriority[statusA] !== statusPriority[statusB]) {
+      return statusPriority[statusA] - statusPriority[statusB];
     }
-  };
+    
+    // If same status, sort by date (earlier dates first for upcoming, later dates first for completed)
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    
+    if (statusA === 'upcoming') {
+      return dateA.getTime() - dateB.getTime(); // Earlier dates first
+    } else if (statusA === 'completed') {
+      return dateB.getTime() - dateA.getTime(); // Later dates first
+    } else {
+      return dateA.getTime() - dateB.getTime(); // Earlier dates first for live
+    }
+  });
 
   if (!user?.isAdmin) {
     return (
@@ -180,6 +203,14 @@ const AdminEvents: React.FC = () => {
           <p className="text-gray-400">Manage all UFC events and fights</p>
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={handleFixCompletedStatus}
+            className="btn-secondary flex items-center"
+            title="Fix the status of events that have completed fights but incorrect status"
+          >
+            <CheckCircleIcon className="w-5 h-5 mr-2" />
+            Fix Completed Events
+          </button>
           <button
             onClick={handleCleanupOrphanedPicks}
             className="btn-secondary flex items-center"
@@ -229,11 +260,11 @@ const AdminEvents: React.FC = () => {
             onClick={() => setFilter('upcoming')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               filter === 'upcoming' 
-                ? 'bg-green-600 text-white' 
+                ? 'bg-blue-600 text-white'
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
-            Upcoming ({events.filter(e => e.status === 'upcoming').length})
+            Upcoming ({events.filter(e => getActualEventStatus(e) === 'upcoming').length})
           </button>
           <button
             onClick={() => setFilter('live')}
@@ -243,17 +274,17 @@ const AdminEvents: React.FC = () => {
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
-            Live ({events.filter(e => e.status === 'live').length})
+            Live ({events.filter(e => getActualEventStatus(e) === 'live').length})
           </button>
           <button
             onClick={() => setFilter('completed')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
               filter === 'completed' 
-                ? 'bg-blue-600 text-white' 
+                ? 'bg-green-600 text-white' 
                 : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
             }`}
           >
-            Completed ({events.filter(e => e.status === 'completed').length})
+            Completed ({events.filter(e => getActualEventStatus(e) === 'completed').length})
           </button>
         </div>
       </div>
@@ -295,9 +326,7 @@ const AdminEvents: React.FC = () => {
 
       {/* Events List */}
       <div className="space-y-4">
-        {filteredEvents.map((event) => {
-          const resultsStatus = getResultsStatus(event);
-          const completedFights = event.fights.filter(fight => fight.isCompleted).length;
+        {sortedEvents.map((event) => {
           const totalFights = event.fights.length;
           
           return (
@@ -306,15 +335,12 @@ const AdminEvents: React.FC = () => {
                 <div className="flex-1">
                   <div className="flex items-center gap-4 mb-3">
                     <h3 className="text-xl font-bold text-white">{event.name}</h3>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getEventStatusColor(event.status)}`}>
-                      {event.status}
-                    </span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${resultsStatus.bgColor}`}>
-                      {resultsStatus.text}
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getEventStatusColor(getActualEventStatus(event))}`}>
+                      {getActualEventStatus(event)}
                     </span>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-400 mb-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-400 mb-3">
                     <div className="flex items-center">
                       <CalendarIcon className="w-4 h-4 mr-2" />
                       <span className="font-medium text-white">Date:</span> {new Date(event.date).toLocaleDateString()}
@@ -327,30 +353,10 @@ const AdminEvents: React.FC = () => {
                       <ChartBarIcon className="w-4 h-4 mr-2" />
                       <span className="font-medium text-white">Fights:</span> {totalFights}
                     </div>
-                    <div className="flex items-center">
-                      <ChartBarIcon className="w-4 h-4 mr-2" />
-                      <span className="font-medium text-white">Results:</span> {completedFights}/{totalFights}
-                    </div>
                   </div>
                   
                   {event.description && (
                     <p className="text-gray-400">{event.description}</p>
-                  )}
-                  
-                  {/* Progress bar for results completion */}
-                  {totalFights > 0 && (
-                    <div className="mt-4">
-                      <div className="flex justify-between text-sm text-gray-400 mb-1">
-                        <span>Results Progress</span>
-                        <span>{completedFights}/{totalFights} fights completed</span>
-                      </div>
-                      <div className="w-full bg-gray-700 rounded-full h-2">
-                        <div 
-                          className="bg-ufc-red h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${(completedFights / totalFights) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
                   )}
                 </div>
                 
@@ -367,7 +373,7 @@ const AdminEvents: React.FC = () => {
                     className="btn-primary text-sm px-4 py-2 flex items-center"
                   >
                     <ChartBarIcon className="w-4 h-4 mr-2" />
-                    {completedFights === 0 ? 'Enter Results' : 'Update Results'}
+                    Enter Results
                   </Link>
                   <button
                     onClick={() => handleDeleteEvent(event.id)}
@@ -382,7 +388,7 @@ const AdminEvents: React.FC = () => {
           );
         })}
         
-        {filteredEvents.length === 0 && (
+        {sortedEvents.length === 0 && (
           <div className="card text-center py-12">
             <CalendarIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-white mb-2">No events found</h3>

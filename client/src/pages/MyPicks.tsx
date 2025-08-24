@@ -7,6 +7,7 @@ import { UserPick } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { getActualEventStatus } from '../utils/eventStatus';
 
 const MyPicks: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -163,9 +164,20 @@ const MyPicks: React.FC = () => {
     fetchOtherUsersPicks(eventId, newPage);
   };
 
+
+
   const getEventStatus = (event: any) => {
-    if (event.status === 'completed') return 'Completed';
-    if (event.status === 'live') return 'Live';
+    // Use the event's status field directly if available
+    if (event?.status) {
+      if (event.status === 'completed') return 'Completed';
+      if (event.status === 'live') return 'Live';
+      if (event.status === 'upcoming') return 'Upcoming';
+    }
+    
+    // Fallback to calculated status if no status field
+    const actualStatus = getActualEventStatus(event);
+    if (actualStatus === 'completed') return 'Completed';
+    if (actualStatus === 'live') return 'Live';
     if (event.pickDeadline && new Date() > new Date(event.pickDeadline)) return 'Deadline Passed';
     return 'Upcoming';
   };
@@ -415,11 +427,6 @@ const MyPicks: React.FC = () => {
                               <span className="text-sm font-medium text-gray-300">
                                 Fight {fight?.fightNumber}
                               </span>
-                              {fight?.isMainEvent && (
-                                <span className="px-2 py-1 bg-ufc-red rounded text-xs font-medium text-white">
-                                  Main Event
-                                </span>
-                              )}
                             </div>
                             
                             {fight && (
@@ -454,8 +461,8 @@ const MyPicks: React.FC = () => {
                                 <div className="flex justify-between text-sm">
                                   <span className="text-gray-400">Points:</span>
                                   <div className="flex items-center gap-2">
-                                    <span className={`font-medium ${pickDetail.pointsEarned > 0 ? 'text-green-400' : 'text-gray-400'}`}>
-                                      {pickDetail.pointsEarned > 0 ? `+${pickDetail.pointsEarned}` : '0'}
+                                    <span className={`font-medium ${pickDetail.pointsEarned > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                      {pickDetail.pointsEarned > 0 ? `+${pickDetail.pointsEarned}` : '+0'}
                                     </span>
                                     {fight.isCompleted && (
                                       <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${
@@ -538,63 +545,131 @@ const MyPicks: React.FC = () => {
                           </div>
                         ) : otherUsersPicks[event.id]?.picks && otherUsersPicks[event.id].picks.length > 0 ? (
                           <>
-                                                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                               {otherUsersPicks[event.id].picks.map((userPick, index) => {
-                                 const username = typeof userPick.user === 'string' ? userPick.user : userPick.user.username;
-                                 const isCurrentUser = typeof userPick.user === 'string' ? false : userPick.user.username === currentUser?.username;
-                                 
-                                 return (
-                                   <div key={userPick.id} className={`bg-gray-800 rounded-lg p-4 ${isCurrentUser ? 'ring-2 ring-ufc-red' : ''}`}>
-                                     <div className="flex items-center justify-between mb-3">
-                                       <span className="text-sm font-medium text-white">
-                                         {username}
-                                         {isCurrentUser && <span className="ml-2 text-xs text-ufc-red">(You)</span>}
-                                       </span>
-                                       <div className="text-right">
-                                         <div className="text-sm font-medium text-ufc-red">
-                                           {userPick.totalPoints} pts
-                                         </div>
-                                         <div className="text-xs text-gray-400">
-                                           {userPick.correctPicks}/{userPick.totalPicks} correct
-                                         </div>
-                                       </div>
-                                     </div>
-                                     
-                                     <div className="space-y-2">
-                                       {userPick.pickDetails?.map((pickDetail, fightIndex) => {
-                                         const fight = pickDetail.fight;
-                                         return (
-                                           <div key={fightIndex} className="text-xs">
-                                             <div className="flex justify-between">
-                                               <span className="text-gray-400">Fight {fight?.fightNumber}:</span>
-                                               <span className="text-white">
-                                                 {pickDetail.predictedWinner === 'fighter1' ? fight?.fighter1Name : fight?.fighter2Name}
-                                               </span>
-                                             </div>
-                                             <div className="flex justify-between">
-                                               <span className="text-gray-400">Method:</span>
-                                               <span className="text-white">{pickDetail.predictedMethod}</span>
-                                             </div>
-                                             {pickDetail.predictedMethod !== 'Decision' && (
-                                               <div className="flex justify-between">
-                                                 <span className="text-gray-400">Round:</span>
-                                                 <span className="text-white">{pickDetail.predictedRound}</span>
-                                               </div>
-                                             )}
-                                             {pickDetail.predictedMethod !== 'Decision' && (
-                                               <div className="flex justify-between">
-                                                 <span className="text-gray-400">Time:</span>
-                                                 <span className="text-white">{pickDetail.predictedTime || 'N/A'}</span>
-                                               </div>
-                                             )}
-                                           </div>
-                                         );
-                                       }) || []}
-                                     </div>
-                                   </div>
-                                 );
-                               })}
-                             </div>
+                            {otherUsersPicks[event.id].picks.map((userPick, index) => {
+                              const username = typeof userPick.user === 'string' ? userPick.user : userPick.user.username;
+                              const isCurrentUser = typeof userPick.user === 'string' ? false : userPick.user.username === currentUser?.username;
+                              
+                              return (
+                                <div key={userPick.id} className={`mb-6 ${isCurrentUser ? 'ring-2 ring-ufc-red ring-opacity-75' : ''}`}>
+                                  {/* User Header */}
+                                  <div className="flex items-center gap-4 mb-4">
+                                    <h5 className="text-lg font-bold text-white">
+                                      {username}
+                                      {isCurrentUser && <span className="ml-2 text-sm text-ufc-red">(You)</span>}
+                                    </h5>
+                                    <span className="text-gray-400">|</span>
+                                    <span className="text-ufc-red font-semibold">{userPick.totalPoints} Points</span>
+                                    <span className="text-gray-400">|</span>
+                                    <span className="text-green-400 font-semibold">{userPick.correctPicks}/{userPick.totalPicks} Correct</span>
+                                    <span className="text-gray-400">|</span>
+                                    <span className={`font-semibold ${getAccuracyColor(userPick.accuracy !== undefined && userPick.accuracy !== null ? `${userPick.accuracy.toFixed(1)}%` : '0%')}`}>
+                                      {userPick.accuracy !== undefined && userPick.accuracy !== null ? `${userPick.accuracy.toFixed(1)}%` : '0%'}
+                                    </span>
+                                  </div>
+                                  
+                                  {/* User's Fight Predictions - Same layout as Your Predictions */}
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                    {userPick.pickDetails?.map((pickDetail, fightIndex) => {
+                                      const fight = pickDetail.fight;
+                                      
+                                      return (
+                                        <div key={fightIndex} className="bg-gray-800 rounded-lg p-4">
+                                          <div className="flex items-center justify-between mb-3">
+                                            <span className="text-sm font-medium text-gray-300">
+                                              Fight {fight?.fightNumber}
+                                            </span>
+                                          </div>
+                                          
+                                          {fight && (
+                                            <div className="space-y-2">
+                                              <div className="flex justify-between text-sm">
+                                                <span className="text-gray-400">Winner:</span>
+                                                <span className="text-white font-medium">
+                                                  {pickDetail.predictedWinner === 'fighter1' ? fight.fighter1Name : fight.fighter2Name}
+                                                </span>
+                                              </div>
+                                              
+                                              <div className="flex justify-between text-sm">
+                                                <span className="text-gray-400">Method:</span>
+                                                <span className="text-white font-medium">{pickDetail.predictedMethod}</span>
+                                              </div>
+                                              
+                                              <div className="flex justify-between text-sm">
+                                                <span className="text-gray-400">Round:</span>
+                                                <span className="text-white font-medium">
+                                                  {pickDetail.predictedMethod === 'Decision' ? 'N/A' : pickDetail.predictedRound}
+                                                </span>
+                                              </div>
+                                              
+                                              <div className="flex justify-between text-sm">
+                                                <span className="text-gray-400">Time:</span>
+                                                <span className="text-white font-medium">
+                                                  {pickDetail.predictedMethod === 'Decision' ? 'N/A' : (pickDetail.predictedTime || 'N/A')}
+                                                </span>
+                                              </div>
+                                              
+                                              {/* Points Display - Same as Your Predictions */}
+                                              <div className="flex justify-between text-sm">
+                                                <span className="text-gray-400">Points:</span>
+                                                <div className="flex items-center gap-2">
+                                                  <span className={`font-medium ${pickDetail.pointsEarned > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                    {pickDetail.pointsEarned > 0 ? `+${pickDetail.pointsEarned}` : '+0'}
+                                                  </span>
+                                                  {fight.isCompleted && (
+                                                    <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${
+                                                      pickDetail.isCorrect 
+                                                        ? 'bg-green-900 text-green-300' 
+                                                        : 'bg-red-900 text-red-300'
+                                                    }`}>
+                                                      {pickDetail.isCorrect ? (
+                                                        <CheckCircleIcon className="w-3 h-3" />
+                                                      ) : (
+                                                        <XCircleIcon className="w-3 h-3" />
+                                                      )}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              </div>
+                                              
+                                              {/* Actual Results - Same as Your Predictions */}
+                                              {event?.status === 'completed' && pickDetail.pointsEarned !== undefined && (
+                                                <div className="mt-3 pt-3 border-t border-gray-700">
+                                                  <div className="flex items-center gap-2">
+                                                    {(() => {
+                                                      const eventFights = eventResults[event.id];
+                                                      const actualFight = eventFights?.find((f: any) => f.fightNumber === fight.fightNumber);
+                                                      const actualWinner = actualFight?.winner;
+                                                      const actualMethod = actualFight?.method;
+                                                      const actualRound = actualFight?.round;
+                                                      const actualTime = actualFight?.time;
+                                                      const isCorrect = actualWinner === pickDetail.predictedWinner;
+                                                      
+                                                      return (
+                                                        <>
+                                                          {isCorrect ? (
+                                                            <CheckCircleIcon className="h-4 w-4 text-green-400" />
+                                                          ) : (
+                                                            <XCircleIcon className="h-4 w-4 text-red-400" />
+                                                          )}
+                                                          <span className="text-xs text-gray-400">
+                                                            Actual: {actualWinner === 'fighter1' ? fight.fighter1Name : fight.fighter2Name} - {actualMethod || 'Unknown'}
+                                                            {actualMethod && actualMethod !== 'Decision' && actualRound && ` (R${actualRound}${actualTime ? ` at ${actualTime}` : ''})`}
+                                                          </span>
+                                                        </>
+                                                      );
+                                                    })()}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    }) || []}
+                                  </div>
+                                </div>
+                              );
+                            })}
 
                             {/* Pagination */}
                             {otherUsersPicks[event.id].totalPages > 1 && (

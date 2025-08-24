@@ -215,6 +215,17 @@ export const eventsAPI = {
     const response = await api.post('/events/cleanup-orphaned-picks?action=report');
     return response.data;
   },
+
+  fixCompletedStatus: async (): Promise<{ 
+    message: string; 
+    updatedEvents: any[]; 
+    finalStatuses: any[]; 
+    totalEvents: number; 
+    completedEvents: number 
+  }> => {
+    const response = await api.post('/events/fix-completed-status');
+    return response.data;
+  },
 };
 
 // Picks API

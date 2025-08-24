@@ -56,14 +56,43 @@ const validateEventInput = [
     .withMessage('Pick deadline must be a valid ISO 8601 date')
 ];
 
+// Helper function to determine event status based on date and results
+const determineEventStatus = (event) => {
+  // If event has a stored status, use that first (especially for completed events)
+  if (event.status && event.status !== 'upcoming') {
+    return event.status;
+  }
+  
+  const now = new Date();
+  const eventDate = new Date(event.date);
+  
+  // If event has results, it's completed
+  if (event.fights && event.fights.some(fight => fight.isCompleted)) {
+    return 'completed';
+  }
+  
+  // If event date has passed, it should be live
+  if (eventDate <= now) {
+    return 'live';
+  }
+  
+  // Otherwise, it's upcoming
+  return 'upcoming';
+};
+
 // Helper function to transform event data for frontend
 const transformEventForFrontend = (event) => {
   const eventData = event.toJSON();
+  
+  // Determine the actual status based on current time and results
+  const actualStatus = determineEventStatus(event);
+  
   return {
     ...eventData,
+    status: actualStatus, // Use the determined status (which now prioritizes stored status)
     venue: event.getVenue(),
     mainCardFights: event.fights ? event.fights.filter(f => f.isMainCard) : [],
-    isUpcoming: event.isUpcoming(),
+    isUpcoming: actualStatus === 'upcoming',
     formattedDate: event.getFormattedDate()
   };
 };
@@ -76,6 +105,8 @@ router.get('/', async (req, res) => {
     const { status, limit = 10, page = 1 } = req.query;
     
     const whereClause = { isActive: true };
+    
+    // If filtering by status, use the stored status field
     if (status) {
       whereClause.status = status;
     }
@@ -350,7 +381,7 @@ router.put('/:id/results', adminAuth, async (req, res) => {
       }
     }
 
-    // Update event status
+    // Update event status to completed since we now have results
     await event.update({ status: 'completed' });
 
     // Score all submitted picks for this event
@@ -852,6 +883,98 @@ router.post('/:id/restore', adminAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Restore event error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/events/fix-completed-status
+// @desc    Fix all events that have completed fights but wrong status (Admin only)
+// @access  Private/Admin
+router.post('/fix-completed-status', adminAuth, async (req, res) => {
+  try {
+    console.log('🔍 Finding events with completed fights that need status fix...');
+    
+    // Find all events that have fights with isCompleted = true
+    const eventsWithCompletedFights = await Event.findAll({
+      include: [{
+        model: Fight,
+        as: 'fights',
+        where: { isCompleted: true }
+      }],
+      where: { isActive: true }
+    });
+    
+    console.log(`📊 Found ${eventsWithCompletedFights.length} events with completed fights`);
+    
+    const updatedEvents = [];
+    
+    // Update each event's status to 'completed'
+    for (const event of eventsWithCompletedFights) {
+      if (event.status !== 'completed') {
+        console.log(`🔄 Updating event "${event.name}" (ID: ${event.id}) from status "${event.status}" to "completed"`);
+        await event.update({ status: 'completed' });
+        updatedEvents.push({
+          id: event.id,
+          name: event.name,
+          oldStatus: event.status,
+          newStatus: 'completed'
+        });
+      } else {
+        console.log(`✅ Event "${event.name}" (ID: ${event.id}) already has status "completed"`);
+      }
+    }
+    
+    // Also check for events that might have the old status logic
+    console.log('\n🔍 Checking for events that might need status updates...');
+    
+    const allEvents = await Event.findAll({
+      include: [{ model: Fight, as: 'fights' }],
+      where: { isActive: true }
+    });
+    
+    for (const event of allEvents) {
+      const hasCompletedFights = event.fights && event.fights.some(fight => fight.isCompleted);
+      const shouldBeCompleted = hasCompletedFights || event.status === 'completed';
+      
+      if (shouldBeCompleted && event.status !== 'completed') {
+        console.log(`🔄 Updating event "${event.name}" (ID: ${event.id}) from status "${event.status}" to "completed"`);
+        await event.update({ status: 'completed' });
+        updatedEvents.push({
+          id: event.id,
+          name: event.name,
+          oldStatus: event.status,
+          newStatus: 'completed'
+        });
+      }
+    }
+    
+    console.log('\n✅ Completed events status fix completed!');
+    
+    // Show final status of all events
+    const finalEvents = await Event.findAll({
+      include: [{ model: Fight, as: 'fights' }],
+      where: { isActive: true },
+      order: [['date', 'DESC']]
+    });
+    
+    const finalStatuses = finalEvents.map(event => ({
+      id: event.id,
+      name: event.name,
+      status: event.status,
+      completedFights: event.fights ? event.fights.filter(f => f.isCompleted).length : 0,
+      totalFights: event.fights ? event.fights.length : 0
+    }));
+    
+    res.json({
+      message: 'Completed events status fix completed successfully',
+      updatedEvents,
+      finalStatuses,
+      totalEvents: finalEvents.length,
+      completedEvents: finalEvents.filter(e => e.status === 'completed').length
+    });
+    
+  } catch (error) {
+    console.error('Fix completed events status error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

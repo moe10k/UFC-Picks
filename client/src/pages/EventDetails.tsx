@@ -6,6 +6,7 @@ import { eventsAPI } from '../services/api';
 import { EventWithFights } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
+import { getActualEventStatus, getEventStatusText, getEventStatusColor } from '../utils/eventStatus';
 
 const EventDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -50,31 +51,7 @@ const EventDetails: React.FC = () => {
   const mainCardFights = event.fights.filter(fight => fight.isMainCard);
   const prelimFights = event.fights.filter(fight => !fight.isMainCard);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'upcoming':
-        return 'text-blue-400';
-      case 'live':
-        return 'text-red-400';
-      case 'completed':
-        return 'text-green-400';
-      default:
-        return 'text-gray-400';
-    }
-  };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'upcoming':
-        return 'Upcoming';
-      case 'live':
-        return 'Live';
-      case 'completed':
-        return 'Completed';
-      default:
-        return status;
-    }
-  };
 
   return (
     <div className="space-y-8">
@@ -83,8 +60,8 @@ const EventDetails: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-4">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium bg-gray-800 ${getStatusColor(event.status)}`}>
-                {getStatusText(event.status)}
+              <span className={`px-3 py-1 rounded-full text-sm font-medium bg-gray-800 ${getEventStatusColor(getActualEventStatus(event))}`}>
+                {getEventStatusText(getActualEventStatus(event))}
               </span>
               {event.isActive && (
                 <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-900 text-green-400">

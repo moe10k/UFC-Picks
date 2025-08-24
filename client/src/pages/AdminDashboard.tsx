@@ -15,6 +15,7 @@ import {
   ClockIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
+import { getActualEventStatus } from '../utils/eventStatus';
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -50,11 +51,13 @@ const AdminDashboard: React.FC = () => {
     return <LoadingSpinner />;
   }
 
-  const upcomingEvents = events.filter(event => event.status === 'upcoming');
-  const completedEvents = events.filter(event => event.status === 'completed');
-  const liveEvents = events.filter(event => event.status === 'live');
+
+
+  const upcomingEvents = events.filter(event => getActualEventStatus(event) === 'upcoming');
+  const completedEvents = events.filter(event => getActualEventStatus(event) === 'completed');
+  const liveEvents = events.filter(event => getActualEventStatus(event) === 'live');
   const eventsNeedingResults = events.filter(event => 
-    event.status === 'completed' && 
+    getActualEventStatus(event) === 'completed' && 
     event.fights.some(fight => !fight.isCompleted)
   );
 
@@ -75,14 +78,7 @@ const AdminDashboard: React.FC = () => {
       color: 'bg-blue-600 hover:bg-blue-700',
       textColor: 'text-blue-100'
     },
-    {
-      title: 'Update Results',
-      description: 'Enter fight results and score picks',
-      icon: ChartBarIcon,
-      href: '/admin/results',
-      color: 'bg-yellow-600 hover:bg-yellow-700',
-      textColor: 'text-yellow-100'
-    },
+
     {
       title: 'User Management',
       description: 'Manage users and admin privileges',
@@ -188,10 +184,10 @@ const AdminDashboard: React.FC = () => {
                     </p>
                   </div>
                   <Link 
-                    to="/admin/results" 
+                    to="/admin/events" 
                     className="ml-auto btn-primary text-sm px-4 py-2"
                   >
-                    Update Results
+                    Manage Events
                   </Link>
                 </div>
               </div>
@@ -209,10 +205,10 @@ const AdminDashboard: React.FC = () => {
                     </p>
                   </div>
                   <Link 
-                    to="/admin/results" 
+                    to="/admin/events" 
                     className="ml-auto btn-primary text-sm px-4 py-2"
                   >
-                    Complete Results
+                    Manage Events
                   </Link>
                 </div>
               </div>
@@ -245,11 +241,11 @@ const AdminDashboard: React.FC = () => {
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-semibold text-white">{event.name}</h3>
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      event.status === 'upcoming' ? 'bg-green-600 text-white' :
-                      event.status === 'completed' ? 'bg-blue-600 text-white' :
+                      getActualEventStatus(event) === 'upcoming' ? 'bg-green-600 text-white' :
+                      getActualEventStatus(event) === 'completed' ? 'bg-blue-600 text-white' :
                       'bg-red-600 text-white'
                     }`}>
-                      {event.status}
+                      {getActualEventStatus(event)}
                     </span>
                     {totalFights > 0 && (
                       <span className="text-xs text-gray-400">

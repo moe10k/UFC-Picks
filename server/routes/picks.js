@@ -66,8 +66,18 @@ router.post('/', auth, [
       return res.status(404).json({ message: 'Event not found' });
     }
 
-    if (event.status !== 'upcoming') {
-      return res.status(400).json({ message: 'Picks can only be submitted for upcoming events' });
+    // Determine actual event status based on date and results
+    const now = new Date();
+    const eventDate = new Date(event.date);
+    
+    // If event has results, it's completed
+    if (event.fights && event.fights.some(fight => fight.isCompleted)) {
+      return res.status(400).json({ message: 'Picks cannot be submitted for completed events' });
+    }
+    
+    // If event date has passed, it should be live
+    if (eventDate <= now) {
+      return res.status(400).json({ message: 'Picks cannot be submitted for live events' });
     }
 
     // Check if pick deadline has passed
@@ -381,8 +391,18 @@ router.put('/:pickId', auth, [
       return res.status(404).json({ message: 'Event not found' });
     }
 
-    if (event.status !== 'upcoming') {
-      return res.status(400).json({ message: 'Cannot update picks for non-upcoming events' });
+    // Determine actual event status based on date and results
+    const now = new Date();
+    const eventDate = new Date(event.date);
+    
+    // If event has results, it's completed
+    if (event.fights && event.fights.some(fight => fight.isCompleted)) {
+      return res.status(400).json({ message: 'Cannot update picks for completed events' });
+    }
+    
+    // If event date has passed, it should be live
+    if (eventDate <= now) {
+      return res.status(400).json({ message: 'Cannot update picks for live events' });
     }
 
     if (new Date() > new Date(event.pickDeadline)) {
