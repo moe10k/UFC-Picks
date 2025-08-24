@@ -24,7 +24,7 @@ async function testCleanup() {
     if (picks.length > 0) {
       console.log('\n🎯 Picks:');
       picks.forEach(pick => {
-        console.log(`  - User ${pick.user_id} -> Event ${pick.event_id} (${pick.picks.length} picks)`);
+        console.log(`  - User ${pick.userId} -> Event ${pick.eventId} (${pick.totalPicks} picks)`);
       });
     }
     
@@ -41,7 +41,7 @@ async function testCleanup() {
     if (orphanedPicks.length > 0) {
       console.log(`⚠️  Found ${orphanedPicks.length} orphaned picks for inactive events`);
       orphanedPicks.forEach(pick => {
-        console.log(`  - Pick ID: ${pick.id}, User: ${pick.user_id}, Event: ${pick.event_id}`);
+        console.log(`  - Pick ID: ${pick.id}, User: ${pick.userId}, Event: ${pick.eventId}`);
       });
     } else {
       console.log('✅ No orphaned picks found');

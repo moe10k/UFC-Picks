@@ -169,7 +169,7 @@ const Leaderboard: React.FC = () => {
                   
                   <td className="py-4 px-6 text-center">
                     <span className="text-white font-medium">
-                      {entry.stats.accuracy}
+                      {entry.stats.averageAccuracy ? `${entry.stats.averageAccuracy.toFixed(1)}%` : '0%'}
                     </span>
                   </td>
                   

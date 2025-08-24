@@ -3,18 +3,18 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ClockIcon, CheckCircleIcon, TrophyIcon, UserIcon, InformationCircleIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import { eventsAPI, picksAPI } from '../services/api';
-import { Event, Pick, Fight } from '../types';
+import { EventWithFights, UserPick, Fight } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
 
 const MakePicks: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [event, setEvent] = useState<Event | null>(null);
-  const [picks, setPicks] = useState<Pick[]>([]);
+  const [event, setEvent] = useState<EventWithFights | null>(null);
+  const [picks, setPicks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [existingPick, setExistingPick] = useState<any>(null);
+  const [existingPick, setExistingPick] = useState<UserPick | null>(null);
   const [showScoringInfo, setShowScoringInfo] = useState(false);
 
   useEffect(() => {
@@ -26,19 +26,31 @@ const MakePicks: React.FC = () => {
         
         // Fetch event details
         const { event: eventData } = await eventsAPI.getById(id);
-        setEvent(eventData);
+        setEvent(eventData as EventWithFights);
         
         // Check if user already has picks for this event
         try {
           const { picks: userPicks } = await picksAPI.getMyPicks(id);
-          const existingUserPick = userPicks.find((pick: any) => pick.event.id === parseInt(id));
+          const existingUserPick = userPicks.find((pick: UserPick) => pick.event.id === parseInt(id));
           
           if (existingUserPick) {
             setExistingPick(existingUserPick);
-            setPicks(existingUserPick.picks);
+            // Convert pick details to the format expected by the form
+            const formattedPicks = existingUserPick.pickDetails.map(pickDetail => {
+              // Find the fight by fightId in the event's fights
+              const fight = (eventData as EventWithFights).fights.find(f => f.id === pickDetail.fightId);
+              return {
+                fightNumber: fight?.fightNumber || 0,
+                winner: pickDetail.predictedWinner,
+                method: pickDetail.predictedMethod,
+                round: pickDetail.predictedRound,
+                time: pickDetail.predictedTime
+              };
+            });
+            setPicks(formattedPicks);
           } else {
             // Initialize picks for each fight
-            const initialPicks: Pick[] = eventData.fights.map((fight: Fight) => ({
+            const initialPicks = (eventData as EventWithFights).fights.map((fight: Fight) => ({
               fightNumber: fight.fightNumber,
               winner: 'fighter1',
               method: 'Decision',
@@ -49,7 +61,7 @@ const MakePicks: React.FC = () => {
           }
         } catch (error) {
           // If no picks found, initialize with default picks
-          const initialPicks: Pick[] = eventData.fights.map((fight: Fight) => ({
+          const initialPicks = (eventData as EventWithFights).fights.map((fight: Fight) => ({
             fightNumber: fight.fightNumber,
             winner: 'fighter1',
             method: 'Decision',
@@ -69,7 +81,7 @@ const MakePicks: React.FC = () => {
     fetchEventAndPicks();
   }, [id]);
 
-  const handlePickChange = (fightNumber: number, field: keyof Pick, value: any) => {
+  const handlePickChange = (fightNumber: number, field: string, value: any) => {
     setPicks(prevPicks => 
       prevPicks.map(pick => {
         if (pick.fightNumber === fightNumber) {
@@ -138,10 +150,22 @@ const MakePicks: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      await picksAPI.submit({
-        eventId: id,
-        picks: picks
+      // Convert picks to the format expected by the new API
+      const formattedPicks = picks.map(pick => {
+        const fight = event.fights.find(f => f.fightNumber === pick.fightNumber);
+        return {
+          fightNumber: pick.fightNumber,
+          winner: pick.winner,
+          method: pick.method,
+          round: pick.round,
+          time: pick.time
+        };
       });
+      
+      await picksAPI.submit({
+        eventId: parseInt(id),
+        picks: formattedPicks
+      } as any);
       
       toast.success(existingPick ? 'Picks updated successfully!' : 'Picks submitted successfully!');
       navigate('/my-picks');
@@ -257,11 +281,11 @@ const MakePicks: React.FC = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-400">Winner:</span>
-                        <span className="text-white font-medium">+10 points</span>
+                        <span className="text-white font-medium">+3 points</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-400">Method:</span>
-                        <span className="text-white font-medium">+5 points</span>
+                        <span className="text-white font-medium">+1 point</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-400">Round:</span>
@@ -275,7 +299,7 @@ const MakePicks: React.FC = () => {
                     <div className="mt-3 pt-3 border-t border-gray-600/30">
                       <div className="flex justify-between text-sm font-semibold">
                         <span className="text-gray-300">Total:</span>
-                        <span className="text-blue-400">+15 points</span>
+                        <span className="text-blue-400">+4 points</span>
                       </div>
                     </div>
                   </div>
@@ -292,25 +316,25 @@ const MakePicks: React.FC = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-400">Winner:</span>
-                        <span className="text-white font-medium">+10 points</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Method:</span>
-                        <span className="text-white font-medium">+5 points</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Round:</span>
                         <span className="text-white font-medium">+3 points</span>
                       </div>
                       <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Method:</span>
+                        <span className="text-white font-medium">+1 point</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Round:</span>
+                        <span className="text-white font-medium">+1 point</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
                         <span className="text-gray-400">Time:</span>
-                        <span className="text-white font-medium">+2 points</span>
+                        <span className="text-white font-medium">+1 point</span>
                       </div>
                     </div>
                     <div className="mt-3 pt-3 border-t border-gray-600/30">
                       <div className="flex justify-between text-sm font-semibold">
-                        <span className="text-gray-300">Total:</span>
-                        <span className="text-red-400">+20 points</span>
+                        <span className="text-gray-400">Total:</span>
+                        <span className="text-red-400">+6 points</span>
                       </div>
                     </div>
                   </div>
@@ -327,25 +351,25 @@ const MakePicks: React.FC = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-400">Winner:</span>
-                        <span className="text-white font-medium">+10 points</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Method:</span>
-                        <span className="text-white font-medium">+5 points</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Round:</span>
                         <span className="text-white font-medium">+3 points</span>
                       </div>
                       <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Method:</span>
+                        <span className="text-white font-medium">+1 point</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Round:</span>
+                        <span className="text-white font-medium">+1 point</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
                         <span className="text-gray-400">Time:</span>
-                        <span className="text-white font-medium">+2 points</span>
+                        <span className="text-white font-medium">+1 point</span>
                       </div>
                     </div>
                     <div className="mt-3 pt-3 border-t border-gray-600/30">
                       <div className="flex justify-between text-sm font-semibold">
-                        <span className="text-gray-300">Total:</span>
-                        <span className="text-purple-400">+20 points</span>
+                        <span className="text-gray-400">Total:</span>
+                        <span className="text-purple-400">+6 points</span>
                       </div>
                     </div>
                   </div>
@@ -429,10 +453,10 @@ const MakePicks: React.FC = () => {
                     <div className="fighter-card-enhanced text-center group/fighter">
                       <div className="relative mb-4">
                         <div className="w-32 h-32 mx-auto relative">
-                          {fight.fighter1.image ? (
+                          {fight.fighter1Image ? (
                             <img 
-                              src={fight.fighter1.image} 
-                              alt={fight.fighter1.name}
+                              src={fight.fighter1Image} 
+                              alt={fight.fighter1Name}
                               className="w-full h-full object-cover rounded-full border-4 border-gray-600 group-hover/fighter:border-ufc-red transition-all duration-300 shadow-xl"
                             />
                           ) : (
@@ -448,15 +472,15 @@ const MakePicks: React.FC = () => {
                         </div>
                       </div>
                       <h3 className="font-bold text-white text-2xl mb-2 group-hover/fighter:text-ufc-gold transition-colors duration-300">
-                        {fight.fighter1.name}
+                        {fight.fighter1Name}
                       </h3>
-                      {fight.fighter1.nickname && (
-                        <p className="text-ufc-red text-sm mb-3 font-medium italic">"{fight.fighter1.nickname}"</p>
+                      {fight.fighter1Nick && (
+                        <p className="text-ufc-red text-sm mb-3 font-medium italic">"{fight.fighter1Nick}"</p>
                       )}
                                               <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/50 rounded-full border border-gray-600/50">
                           <TrophyIcon className="h-4 w-4 text-ufc-gold" />
                           <p className="text-gray-300 text-sm font-mono">
-                            {fight.fighter1.record.wins}-{fight.fighter1.record.losses}-{fight.fighter1.record.draws}
+                            {fight.fighter1Record || 'N/A'}
                           </p>
                         </div>
                     </div>
@@ -475,10 +499,10 @@ const MakePicks: React.FC = () => {
                     <div className="fighter-card-enhanced text-center group/fighter">
                       <div className="relative mb-4">
                         <div className="w-32 h-32 mx-auto relative">
-                          {fight.fighter2.image ? (
+                          {fight.fighter2Image ? (
                             <img 
-                              src={fight.fighter2.image} 
-                              alt={fight.fighter2.name}
+                              src={fight.fighter2Image} 
+                              alt={fight.fighter2Name}
                               className="w-full h-full object-cover rounded-full border-4 border-gray-600 group-hover/fighter:border-ufc-red transition-all duration-300 shadow-xl"
                             />
                           ) : (
@@ -494,15 +518,15 @@ const MakePicks: React.FC = () => {
                         </div>
                       </div>
                       <h3 className="font-bold text-white text-2xl mb-2 group-hover/fighter:text-ufc-gold transition-colors duration-300">
-                        {fight.fighter2.name}
+                        {fight.fighter2Name}
                       </h3>
-                      {fight.fighter2.nickname && (
-                        <p className="text-ufc-red text-sm mb-3 font-medium italic">"{fight.fighter2.nickname}"</p>
+                      {fight.fighter2Nick && (
+                        <p className="text-ufc-red text-sm mb-3 font-medium italic">"{fight.fighter2Nick}"</p>
                       )}
                                               <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/50 rounded-full border border-gray-600/50">
                           <TrophyIcon className="h-4 w-4 text-ufc-gold" />
                           <p className="text-gray-300 text-sm font-mono">
-                            {fight.fighter2.record.wins}-{fight.fighter2.record.losses}-{fight.fighter2.record.draws}
+                            {fight.fighter2Record || 'N/A'}
                           </p>
                         </div>
                     </div>
@@ -526,7 +550,7 @@ const MakePicks: React.FC = () => {
                             className="sr-only"
                           />
                           <div className="winner-option-content">
-                            <span className="text-white font-semibold">{fight.fighter1.name}</span>
+                            <span className="text-white font-semibold">{fight.fighter1Name}</span>
                           </div>
                         </label>
                         <label className="winner-option">
@@ -539,7 +563,7 @@ const MakePicks: React.FC = () => {
                             className="sr-only"
                           />
                           <div className="winner-option-content">
-                            <span className="text-white font-semibold">{fight.fighter2.name}</span>
+                            <span className="text-white font-semibold">{fight.fighter2Name}</span>
                           </div>
                         </label>
                       </div>

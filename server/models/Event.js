@@ -50,45 +50,27 @@ const Event = sequelize.define('Event', {
   pickDeadline: {
     type: DataTypes.DATE,
     allowNull: false
-  },
-  // Store fights as JSON
-  fights: {
-    type: DataTypes.TEXT, // JSON string
-    allowNull: false,
-    defaultValue: '[]',
-    get() {
-      const rawValue = this.getDataValue('fights');
-      if (!rawValue) return [];
-      
-      try {
-        return JSON.parse(rawValue);
-      } catch (error) {
-        console.error('Error parsing fights JSON:', error);
-        console.error('Raw fights value:', rawValue);
-        return [];
-      }
-    },
-    set(value) {
-      this.setDataValue('fights', JSON.stringify(value));
-    }
   }
 }, {
   tableName: 'events',
+  timestamps: true,
   indexes: [
     {
       fields: ['date', 'status']
     },
     {
       fields: ['status', 'is_active']
+    },
+    {
+      fields: ['pick_deadline']
+    },
+    {
+      fields: ['venue_city', 'venue_country']
     }
   ]
 });
 
 // Instance methods
-Event.prototype.getMainCardFights = function() {
-  return this.fights.filter(fight => fight.isMainCard);
-};
-
 Event.prototype.isUpcoming = function() {
   return this.date > new Date() && this.status === 'upcoming';
 };
@@ -111,13 +93,5 @@ Event.prototype.getVenue = function() {
     country: this.venueCountry
   };
 };
-
-// Associations will be set up in a separate file to avoid circular dependencies
-// Event.hasMany(require('./Pick'), { 
-//   foreignKey: 'event_id', 
-//   as: 'picks',
-//   onDelete: 'CASCADE',
-//   onUpdate: 'CASCADE'
-// });
 
 module.exports = Event; 

@@ -1,16 +1,20 @@
+// Core User interface without denormalized stats
 export interface User {
   id: number;
   username: string;
   email: string;
   avatar?: string;
-  stats: UserStats;
   isAdmin?: boolean;
   isOwner?: boolean;
   isActive?: boolean;
   createdAt?: string;
+  updatedAt?: string;
 }
 
+// User statistics stored in separate table
 export interface UserStats {
+  id: number;
+  userId: number;
   totalPicks: number;
   correctPicks: number;
   totalPoints: number;
@@ -18,44 +22,53 @@ export interface UserStats {
   bestEventScore: number;
   currentStreak: number;
   longestStreak: number;
+  averageAccuracy: number;
+  lastUpdated: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
+// User with stats included
+export interface UserWithStats extends User {
+  stats: UserStats;
+}
+
+// Fighter information
 export interface Fighter {
   name: string;
   nickname?: string;
   image?: string;
-  record: {
-    wins: number;
-    losses: number;
-    draws: number;
-  };
-  stats?: {
-    age?: number;
-    height?: string;
-    weight?: string;
-    reach?: string;
-    stance?: string;
-    hometown?: string;
-  };
+  record: string;
 }
 
+// Individual fight data
 export interface Fight {
+  id: number;
+  eventId: number;
   fightNumber: number;
   weightClass: string;
   isMainCard: boolean;
   isMainEvent: boolean;
   isCoMainEvent: boolean;
-  fighter1: Fighter;
-  fighter2: Fighter;
-  result?: {
-    winner?: 'fighter1' | 'fighter2';
-    method?: 'KO/TKO' | 'Submission' | 'Decision';
-    round?: number;
-    time?: string;
-  };
+  fighter1Name: string;
+  fighter2Name: string;
+  fighter1Nick?: string;
+  fighter2Nick?: string;
+  fighter1Image?: string;
+  fighter2Image?: string;
+  fighter1Record?: string;
+  fighter2Record?: string;
   isCompleted: boolean;
+  winner?: 'fighter1' | 'fighter2' | 'draw' | 'no_contest';
+  method?: 'KO/TKO' | 'Submission' | 'Decision' | 'Draw' | 'No Contest';
+  round?: number;
+  time?: string;
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
+// Event without embedded fights
 export interface Event {
   id: number;
   name: string;
@@ -68,70 +81,96 @@ export interface Event {
   };
   image?: string;
   description?: string;
-  fights: Fight[];
   status: 'upcoming' | 'live' | 'completed';
   isActive: boolean;
   pickDeadline: string;
-  mainCardFights?: Fight[];
-  isUpcoming?: boolean;
-  formattedDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export interface Pick {
-  fightNumber: number;
-  winner: 'fighter1' | 'fighter2';
-  method: 'KO/TKO' | 'Submission' | 'Decision';
-  round?: number; // Optional for Decision method
-  time?: string; // Optional time prediction for KO/TKO and Submission methods
+// Event with fights included
+export interface EventWithFights extends Event {
+  fights: Fight[];
 }
 
-export interface UserPick {
+// Individual pick prediction
+export interface PickDetail {
   id: number;
-  user: string | {
-    id: number;
-    username: string;
-    avatar?: string;
-  };
-  event: string | Event;
-  picks: Pick[];
-  totalPoints: number;
-  correctPicks: number;
+  pickId: number;
+  fightId: number;
+  predictedWinner: 'fighter1' | 'fighter2';
+  predictedMethod: 'KO/TKO' | 'Submission' | 'Decision';
+  predictedRound?: number;
+  predictedTime?: string;
+  pointsEarned: number;
+  isCorrect: boolean;
+  scoredAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Pick detail with fight information included
+export interface PickDetailWithFight extends PickDetail {
+  fight: Fight;
+}
+
+// User's picks for an event
+export interface Pick {
+  id: number;
+  userId: number;
+  eventId: number;
   isSubmitted: boolean;
   submittedAt?: string;
   isScored: boolean;
   scoredAt?: string;
-  accuracy?: string;
+  totalPoints: number;
+  correctPicks: number;
+  totalPicks: number;
+  accuracy: number;
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
+// Pick with details included
+export interface PickWithDetails extends Pick {
+  pickDetails: PickDetailWithFight[];
+}
+
+// User's picks for an event with full details
+export interface UserPick extends Pick {
+  user: User;
+  event: Event;
+  pickDetails: PickDetailWithFight[];
+}
+
+// Leaderboard entry
 export interface LeaderboardEntry {
   rank: number;
-  user: {
-    id: number;
-    username: string;
-    avatar?: string;
-  };
-  stats: {
-    totalPoints: number;
-    totalPicks: number;
-    correctPicks: number;
-    accuracy: string;
-    eventsParticipated: number;
-    bestEventScore: number;
-    currentStreak: number;
-    longestStreak: number;
-  };
+  user: User;
+  stats: UserStats;
 }
 
+// Leaderboard response
 export interface LeaderboardResponse {
   leaderboard: LeaderboardEntry[];
-  pagination: {
-    current: number;
-    total: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
+  pagination: PaginationInfo;
 }
 
+// Event-specific leaderboard entry
+export interface EventLeaderboardEntry {
+  rank: number;
+  user: User;
+  stats: {
+    totalPoints: number;
+    correctPicks: number;
+    totalPicks: number;
+    accuracy: string;
+  };
+  submittedAt: string;
+}
+
+// Event leaderboard response
 export interface EventLeaderboardResponse {
   event: {
     id: number;
@@ -139,41 +178,25 @@ export interface EventLeaderboardResponse {
     date: string;
     status: string;
   };
-  leaderboard: Array<{
-    rank: number;
-    user: {
-      id: number;
-      username: string;
-      avatar?: string;
-    };
-    stats: {
-      totalPoints: number;
-      correctPicks: number;
-      totalPicks: number;
-      accuracy: string;
-    };
-    submittedAt: string;
-  }>;
-  pagination: {
-    current: number;
-    total: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
+  leaderboard: EventLeaderboardEntry[];
+  pagination: PaginationInfo;
 }
 
+// Authentication response
 export interface AuthResponse {
   message: string;
   token: string;
-  user: User;
+  user: UserWithStats;
 }
 
+// Generic API response
 export interface ApiResponse<T> {
   data?: T;
   message?: string;
   error?: string;
 }
 
+// Pagination information
 export interface PaginationInfo {
   current: number;
   total: number;
@@ -181,15 +204,18 @@ export interface PaginationInfo {
   hasPrev: boolean;
 }
 
+// Events response
 export interface EventsResponse {
-  events: Event[];
+  events: EventWithFights[];
   pagination: PaginationInfo;
 }
 
+// Picks response
 export interface PicksResponse {
   picks: UserPick[];
 }
 
+// Leaderboard statistics
 export interface LeaderboardStats {
   totalUsers: number;
   totalEvents: number;
@@ -201,4 +227,113 @@ export interface LeaderboardStats {
     totalPoints: number;
     avatar?: string;
   }>;
+}
+
+// Fight result for scoring
+export interface FightResult {
+  fightId: number;
+  winner: 'fighter1' | 'fighter2' | 'draw' | 'no_contest';
+  method: 'KO/TKO' | 'Submission' | 'Decision' | 'Draw' | 'No Contest';
+  round?: number;
+  time?: string;
+}
+
+// Event creation/update
+export interface EventInput {
+  name: string;
+  date: string;
+  venueName: string;
+  venueCity: string;
+  venueState?: string;
+  venueCountry: string;
+  image?: string;
+  description?: string;
+  pickDeadline: string;
+}
+
+// Fight creation/update
+export interface FightInput {
+  eventId: number;
+  fightNumber: number;
+  weightClass: string;
+  isMainCard: boolean;
+  isMainEvent: boolean;
+  isCoMainEvent: boolean;
+  fighter1Name: string;
+  fighter2Name: string;
+  fighter1Nick?: string;
+  fighter2Nick?: string;
+  fighter1Image?: string;
+  fighter2Image?: string;
+  fighter1Record?: string;
+  fighter2Record?: string;
+}
+
+// Pick submission
+export interface PickSubmission {
+  eventId: number;
+  picks: Array<{
+    fightId: number;
+    predictedWinner: 'fighter1' | 'fighter2';
+    predictedMethod: 'KO/TKO' | 'Submission' | 'Decision';
+    predictedRound?: number;
+    predictedTime?: string;
+  }>;
+}
+
+// User profile update
+export interface UserProfileUpdate {
+  username?: string;
+  email?: string;
+  avatar?: string;
+}
+
+// Password change
+export interface PasswordChange {
+  currentPassword: string;
+  newPassword: string;
+}
+
+// Admin event management
+export interface AdminEventUpdate extends EventInput {
+  status?: 'upcoming' | 'live' | 'completed';
+  isActive?: boolean;
+}
+
+// Admin fight result update
+export interface AdminFightResultUpdate {
+  fightId: number;
+  isCompleted: boolean;
+  winner?: 'fighter1' | 'fighter2' | 'draw' | 'no_contest';
+  method?: 'KO/TKO' | 'Submission' | 'Decision' | 'Draw' | 'No Contest';
+  round?: number;
+  time?: string;
+  notes?: string;
+}
+
+// Search and filter options
+export interface EventFilters {
+  status?: 'upcoming' | 'live' | 'completed';
+  dateFrom?: string;
+  dateTo?: string;
+  venueCity?: string;
+  venueCountry?: string;
+}
+
+export interface UserFilters {
+  isActive?: boolean;
+  isAdmin?: boolean;
+  searchTerm?: string;
+}
+
+// Database statistics
+export interface DatabaseStats {
+  totalUsers: number;
+  totalEvents: number;
+  totalFights: number;
+  totalPicks: number;
+  totalPickDetails: number;
+  activeUsers: number;
+  upcomingEvents: number;
+  completedEvents: number;
 } 

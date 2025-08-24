@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { eventsAPI } from '../services/api';
-import { Event } from '../types';
+import { EventWithFights } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Breadcrumb from '../components/Breadcrumb';
 import toast from 'react-hot-toast';
@@ -18,7 +18,7 @@ import {
 
 const AdminEvents: React.FC = () => {
   const { user } = useAuth();
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<EventWithFights[]>([]);
   const [deletedEvents, setDeletedEvents] = useState<any[]>([]);
   const [orphanedPicksCount, setOrphanedPicksCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -139,7 +139,7 @@ const AdminEvents: React.FC = () => {
     }
   };
 
-  const getResultsStatus = (event: Event) => {
+  const getResultsStatus = (event: EventWithFights) => {
     const completedFights = event.fights.filter(fight => fight.isCompleted).length;
     const totalFights = event.fights.length;
     

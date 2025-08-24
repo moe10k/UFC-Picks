@@ -55,8 +55,8 @@ const Navbar: React.FC = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-    { name: 'Leaderboard', href: '/leaderboard', icon: TrophyIcon },
     { name: 'My Picks', href: '/my-picks', icon: UserIcon },
+    { name: 'Leaderboard', href: '/leaderboard', icon: TrophyIcon },
     { name: 'Store', href: '/store', icon: ShoppingBagIcon, comingSoon: true },
   ];
 
@@ -146,8 +146,23 @@ const Navbar: React.FC = () => {
                 {isAdminDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-600">
                     {adminOptions.map((option) => {
-                      const isActive = location.pathname === option.href || 
-                        (option.href !== '/admin' && location.pathname.startsWith(option.href));
+                      // More precise active state logic to avoid conflicts
+                      let isActive = false;
+                      if (option.href === '/admin') {
+                        // Dashboard is active only when exactly on /admin
+                        isActive = location.pathname === '/admin';
+                      } else if (option.href === '/admin/events') {
+                        // Manage Events is active only when exactly on /admin/events (not on create/edit pages)
+                        isActive = location.pathname === '/admin/events';
+                      } else {
+                        // Other options use exact match or specific prefix matching
+                        isActive = location.pathname === option.href || 
+                          (option.href !== '/admin' && 
+                           location.pathname.startsWith(option.href) && 
+                           !location.pathname.includes('/create') && 
+                           !location.pathname.includes('/edit'));
+                      }
+                      
                       return (
                         <Link
                           key={option.name}
@@ -300,8 +315,23 @@ const Navbar: React.FC = () => {
                   </p>
                 </div>
                 {adminOptions.map((option) => {
-                  const isActive = location.pathname === option.href || 
-                    (option.href !== '/admin' && location.pathname.startsWith(option.href));
+                  // More precise active state logic to avoid conflicts (same as desktop)
+                  let isActive = false;
+                  if (option.href === '/admin') {
+                    // Dashboard is active only when exactly on /admin
+                    isActive = location.pathname === '/admin';
+                  } else if (option.href === '/admin/events') {
+                    // Manage Events is active only when exactly on /admin/events (not on create/edit pages)
+                    isActive = location.pathname === '/admin/events';
+                  } else {
+                    // Other options use exact match or specific prefix matching
+                    isActive = location.pathname === option.href || 
+                      (option.href !== '/admin' && 
+                       location.pathname.startsWith(option.href) && 
+                       !location.pathname.includes('/create') && 
+                       !location.pathname.includes('/edit'));
+                  }
+                  
                   return (
                     <Link
                       key={option.name}

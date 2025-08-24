@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { eventsAPI } from '../services/api';
-import { Event } from '../types';
+import { EventWithFights } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
 import { 
@@ -18,7 +18,7 @@ import {
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<EventWithFights[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

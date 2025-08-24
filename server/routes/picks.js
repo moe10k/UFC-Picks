@@ -1,7 +1,9 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Pick = require('../models/Pick');
+const PickDetail = require('../models/PickDetail');
 const Event = require('../models/Event');
+const Fight = require('../models/Fight');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
 
@@ -57,7 +59,9 @@ router.post('/', auth, [
     const { eventId, picks } = req.body;
 
     // Check if event exists and is upcoming
-    const event = await Event.findByPk(eventId);
+    const event = await Event.findByPk(eventId, {
+      include: [{ model: Fight, as: 'fights' }]
+    });
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }
@@ -75,10 +79,36 @@ router.post('/', auth, [
     const existingPick = await Pick.findOne({ 
       where: { user_id: req.user.id, event_id: eventId } 
     });
+    
     if (existingPick && existingPick.isSubmitted) {
       // If picks are already submitted, update them instead
-      existingPick.picks = picks;
-      await existingPick.save();
+      // Delete existing pick details
+      await PickDetail.destroy({ where: { pickId: existingPick.id } });
+      
+      // Create new pick details
+      const pickDetailPromises = picks.map(pickData => {
+        const fight = event.fights.find(f => f.fightNumber === pickData.fightNumber);
+        if (!fight) {
+          throw new Error(`Fight ${pickData.fightNumber} not found in event`);
+        }
+        
+        return PickDetail.create({
+          pickId: existingPick.id,
+          fightId: fight.id,
+          predictedWinner: pickData.winner,
+          predictedMethod: pickData.method,
+          predictedRound: pickData.round,
+          predictedTime: pickData.time
+        });
+      });
+      
+      await Promise.all(pickDetailPromises);
+      
+      // Update pick totals
+      await existingPick.update({
+        totalPicks: picks.length,
+        submittedAt: new Date()
+      });
       
       res.json({
         message: 'Picks updated successfully',
@@ -102,18 +132,34 @@ router.post('/', auth, [
     let userPick;
     if (existingPick) {
       userPick = existingPick;
-      userPick.picks = picks;
-      await userPick.save();
+      // Delete existing pick details
+      await PickDetail.destroy({ where: { pickId: existingPick.id } });
     } else {
       userPick = await Pick.create({
-        user_id: req.user.id,
-        event_id: eventId,
-        picks
+        userId: req.user.id,
+        eventId: eventId,
+        totalPicks: picks.length
       });
     }
 
+    // Create pick details
+    const pickDetailPromises = picks.map(pickData => {
+      const fight = event.fights.find(f => f.fightNumber === pickData.fightNumber);
+      return PickDetail.create({
+        pickId: userPick.id,
+        fightId: fight.id,
+        predictedWinner: pickData.winner,
+        predictedMethod: pickData.method,
+        predictedRound: pickData.round,
+        predictedTime: pickData.time
+      });
+    });
+    
+    await Promise.all(pickDetailPromises);
+
     // Submit picks
     userPick.isSubmitted = true;
+    userPick.submittedAt = new Date();
     await userPick.save();
 
     res.status(201).json({
@@ -145,7 +191,16 @@ router.get('/my-picks', auth, async (req, res) => {
           model: Event,
           as: 'event',
           where: { isActive: true }, // Only include active events
-          attributes: ['id', 'name', 'date', 'status', 'pickDeadline', 'fights']
+          attributes: ['id', 'name', 'date', 'status', 'pickDeadline']
+        },
+        {
+          model: PickDetail,
+          as: 'pickDetails',
+          include: [{
+            model: Fight,
+            as: 'fight',
+            attributes: ['id', 'fightNumber', 'weightClass', 'fighter1Name', 'fighter2Name', 'isMainCard', 'isMainEvent', 'isCoMainEvent']
+          }]
         }
       ],
       order: [['createdAt', 'DESC']]
@@ -153,8 +208,8 @@ router.get('/my-picks', auth, async (req, res) => {
 
     const picks = picksRaw.map(p => ({
       ...p.toJSON(),
-      accuracy: p.getAccuracy(),
-      submittedAt: p.createdAt
+      accuracy: p.getAccuracyDecimal(),
+      submittedAt: p.submittedAt || p.createdAt
     }));
 
     res.json({ picks });
@@ -184,19 +239,30 @@ router.get('/user/:userId', auth, async (req, res) => {
 
     const picksRaw = await Pick.findAll({
       where: whereClause,
-      include: [{
-        model: Event,
-        as: 'event',
-        where: { isActive: true }, // Only include active events
-        attributes: ['id', 'name', 'date', 'status', 'pickDeadline', 'fights']
-      }],
+      include: [
+        {
+          model: Event,
+          as: 'event',
+          where: { isActive: true }, // Only include active events
+          attributes: ['id', 'name', 'date', 'status', 'pickDeadline']
+        },
+        {
+          model: PickDetail,
+          as: 'pickDetails',
+          include: [{
+            model: Fight,
+            as: 'fight',
+            attributes: ['id', 'fightNumber', 'weightClass', 'fighter1Name', 'fighter2Name', 'isMainCard', 'isMainEvent', 'isCoMainEvent']
+          }]
+        }
+      ],
       order: [['createdAt', 'DESC']]
     });
 
     const picks = picksRaw.map(p => ({
       ...p.toJSON(),
-      accuracy: p.getAccuracy(),
-      submittedAt: p.createdAt
+      accuracy: p.getAccuracyDecimal(),
+      submittedAt: p.submittedAt || p.createdAt
     }));
 
     res.json({ picks });
@@ -225,11 +291,22 @@ router.get('/event/:eventId', auth, async (req, res) => {
 
     const picks = await Pick.findAll({
       where: { event_id: eventId },
-      include: [{
-        model: User,
-        as: 'user',
-        attributes: ['id', 'username', 'avatar']
-      }],
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'username', 'avatar']
+        },
+        {
+          model: PickDetail,
+          as: 'pickDetails',
+          include: [{
+            model: Fight,
+            as: 'fight',
+            attributes: ['id', 'fightNumber', 'weightClass', 'fighter1Name', 'fighter2Name', 'isMainCard', 'isMainEvent', 'isCoMainEvent']
+          }]
+        }
+      ],
       order: [['createdAt', 'ASC']]
     });
 
@@ -288,7 +365,7 @@ router.put('/:pickId', auth, [
     const { picks } = req.body;
 
     const existingPick = await Pick.findByPk(pickId, {
-      include: [{ model: Event, as: 'event' }]
+      include: [{ model: Event, as: 'event', include: [{ model: Fight, as: 'fights' }] }]
     });
 
     if (!existingPick) {
@@ -312,17 +389,36 @@ router.put('/:pickId', auth, [
       return res.status(400).json({ message: 'Pick deadline has passed' });
     }
 
-    const eventFightNumbers = event.fights.map(f => f.fightNumber);
-    const pickFightNumbers = picks.map(p => p.fightNumber);
-    const invalidFights = pickFightNumbers.filter(fn => !eventFightNumbers.includes(fn));
-    if (invalidFights.length > 0) {
-      return res.status(400).json({
-        message: `Invalid fight numbers: ${invalidFights.join(', ')}`
+    // Update picks if provided
+    if (picks && Array.isArray(picks)) {
+      // Delete existing pick details
+      await PickDetail.destroy({ where: { pickId: existingPick.id } });
+      
+      // Create new pick details
+      const pickDetailPromises = picks.map(pickData => {
+        const fight = event.fights.find(f => f.fightNumber === pickData.fightNumber);
+        if (!fight) {
+          throw new Error(`Fight ${pickData.fightNumber} not found in event`);
+        }
+        
+        return PickDetail.create({
+          pickId: existingPick.id,
+          fightId: fight.id,
+          predictedWinner: pickData.winner,
+          predictedMethod: pickData.method,
+          predictedRound: pickData.round,
+          predictedTime: pickData.time
+        });
+      });
+      
+      await Promise.all(pickDetailPromises);
+      
+      // Update pick totals
+      await existingPick.update({
+        totalPicks: picks.length,
+        submittedAt: new Date()
       });
     }
-
-    existingPick.picks = picks;
-    await existingPick.save();
 
     res.json({
       message: 'Picks updated successfully',

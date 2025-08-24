@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { eventsAPI } from '../services/api';
-import { Event } from '../types';
+import { EventWithFights } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Breadcrumb from '../components/Breadcrumb';
 import toast from 'react-hot-toast';
@@ -21,7 +21,7 @@ const AdminEventResults: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [event, setEvent] = useState<Event | null>(null);
+  const [event, setEvent] = useState<EventWithFights | null>(null);
   const [results, setResults] = useState<FightResult[]>([]);
 
   const fetchEvent = useCallback(async () => {
@@ -31,13 +31,13 @@ const AdminEventResults: React.FC = () => {
       
       // Initialize results from existing fight results
       const existingResults: FightResult[] = eventData.fights
-        .filter(fight => fight.result)
+        .filter(fight => fight.isCompleted && fight.winner)
         .map(fight => ({
           fightNumber: fight.fightNumber,
-          winner: fight.result!.winner || '',
-          method: fight.result!.method || '',
-          round: fight.result!.round || 1,
-          time: fight.result!.time || ''
+          winner: fight.winner || '',
+          method: fight.method || '',
+          round: fight.round || 1,
+          time: fight.time || ''
         }));
       
       setResults(existingResults);
@@ -213,19 +213,17 @@ const AdminEventResults: React.FC = () => {
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="text-center p-4 bg-gray-800 rounded-lg">
-                      <h4 className="font-semibold text-white">{fight.fighter1.name}</h4>
-                      {fight.fighter1.nickname && <p className="text-gray-400">"{fight.fighter1.nickname}"</p>}
+                      <h4 className="font-semibold text-white">{fight.fighter1Name}</h4>
+                      {fight.fighter1Nick && <p className="text-gray-400">"{fight.fighter1Nick}"</p>}
                       <p className="text-sm text-gray-500">
-                        {fight.fighter1.record.wins}-{fight.fighter1.record.losses}
-                        {fight.fighter1.record.draws > 0 && `-${fight.fighter1.record.draws}`}
+                        {fight.fighter1Record || 'N/A'}
                       </p>
                     </div>
                     <div className="text-center p-4 bg-gray-800 rounded-lg">
-                      <h4 className="font-semibold text-white">{fight.fighter2.name}</h4>
-                      {fight.fighter2.nickname && <p className="text-gray-400">"{fight.fighter2.nickname}"</p>}
+                      <h4 className="font-semibold text-white">{fight.fighter2Name}</h4>
+                      {fight.fighter2Nick && <p className="text-gray-400">"{fight.fighter2Nick}"</p>}
                       <p className="text-sm text-gray-500">
-                        {fight.fighter2.record.wins}-{fight.fighter2.record.losses}
-                        {fight.fighter2.record.draws > 0 && `-${fight.fighter2.record.draws}`}
+                        {fight.fighter2Record || 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -240,8 +238,8 @@ const AdminEventResults: React.FC = () => {
                         required
                       >
                         <option value="">Select winner</option>
-                        <option value="fighter1">{fight.fighter1.name}</option>
-                        <option value="fighter2">{fight.fighter2.name}</option>
+                        <option value="fighter1">{fight.fighter1Name}</option>
+                        <option value="fighter2">{fight.fighter2Name}</option>
                       </select>
                     </div>
                     

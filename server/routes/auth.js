@@ -731,7 +731,7 @@ router.put('/users/:userId/status', adminAuth, [
         isOwner: targetUser.isOwner,
         isActive: targetUser.isActive,
         createdAt: targetUser.createdAt,
-        stats: targetUser.getStats()
+        stats: null
       }
     });
   } catch (error) {

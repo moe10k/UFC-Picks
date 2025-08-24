@@ -166,10 +166,7 @@ const Profile: React.FC = () => {
           
           <div className="text-center">
             <div className="text-3xl font-bold text-green-400 mb-2">
-              {user.stats.totalPicks > 0 
-                ? `${((user.stats.correctPicks / user.stats.totalPicks) * 100).toFixed(1)}%`
-                : '0%'
-              }
+              {user.stats.averageAccuracy ? `${user.stats.averageAccuracy.toFixed(1)}%` : '0%'}
             </div>
             <div className="text-gray-400 text-sm">Accuracy</div>
           </div>
