@@ -40,6 +40,7 @@ router.get('/', async (req, res) => {
         totalPicks: stats.totalPicks,
         correctPicks: stats.correctPicks,
         accuracy: stats.getAccuracy(),
+        averageAccuracy: stats.getAccuracyDecimal(),
         eventsParticipated: stats.eventsParticipated,
         bestEventScore: stats.bestEventScore,
         currentStreak: stats.currentStreak,
@@ -101,7 +102,7 @@ router.get('/event/:eventId', async (req, res) => {
         totalPoints: pick.totalPoints,
         totalPicks: pick.totalPicks,
         correctPicks: pick.correctPicks,
-        accuracy: pick.getAccuracyDecimal(),
+        accuracy: pick.getAccuracy(),
         submittedAt: pick.submittedAt
       }
     }));
