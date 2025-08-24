@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { TrophyIcon, StarIcon } from '@heroicons/react/24/outline';
-import { leaderboardAPI } from '../services/api';
-import { LeaderboardEntry, Event } from '../types';
+import { TrophyIcon, StarIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import { leaderboardAPI, eventsAPI } from '../services/api';
+import { LeaderboardEntry, Event, EventLeaderboardEntry } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
 
@@ -10,7 +10,10 @@ const Leaderboard: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [event, setEvent] = useState<Event | null>(null);
+  const [completedEvents, setCompletedEvents] = useState<Event[]>([]);
+  const [eventLeaderboards, setEventLeaderboards] = useState<Record<number, EventLeaderboardEntry[]>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNext, setHasNext] = useState(false);
   const [hasPrev, setHasPrev] = useState(false);
@@ -33,6 +36,9 @@ const Leaderboard: React.FC = () => {
           setLeaderboard(response.leaderboard);
           setHasNext(response.pagination.hasNext);
           setHasPrev(response.pagination.hasPrev);
+          
+          // Fetch completed events for individual event results
+          await fetchCompletedEvents();
         }
       } catch (error: any) {
         console.error('Error fetching leaderboard:', error);
@@ -44,6 +50,30 @@ const Leaderboard: React.FC = () => {
 
     fetchData();
   }, [eventId, currentPage]);
+
+  const fetchCompletedEvents = async () => {
+    try {
+      setIsLoadingEvents(true);
+      const response = await eventsAPI.getAll({ status: 'completed', limit: 10 });
+      setCompletedEvents(response.events);
+      
+      // Fetch leaderboards for each completed event
+      const leaderboards: Record<number, EventLeaderboardEntry[]> = {};
+      for (const event of response.events) {
+        try {
+          const eventResponse = await leaderboardAPI.getEvent(event.id, { limit: 5 });
+          leaderboards[event.id] = eventResponse.leaderboard;
+        } catch (error) {
+          console.error(`Error fetching leaderboard for event ${event.id}:`, error);
+        }
+      }
+      setEventLeaderboards(leaderboards);
+    } catch (error: any) {
+      console.error('Error fetching completed events:', error);
+    } finally {
+      setIsLoadingEvents(false);
+    }
+  };
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -240,18 +270,122 @@ const Leaderboard: React.FC = () => {
         </div>
       )}
 
-      {/* Call to Action */}
-      {!eventId && (
-        <div className="card text-center">
-          <h3 className="text-xl font-bold text-white mb-4">Want to climb the rankings?</h3>
-          <p className="text-gray-400 mb-6">
-            Start making picks for upcoming events to earn points and climb the leaderboard!
-          </p>
-          <Link to="/dashboard" className="btn-primary">
-            View Upcoming Events
-          </Link>
+      {/* Event Breakdowns */}
+      {!eventId && completedEvents.length > 0 && (
+        <div className="space-y-6">
+          <div className="card">
+            <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+              <CalendarIcon className="h-6 w-6 text-blue-400" />
+              Event Breakdowns
+            </h2>
+            <p className="text-gray-400 mb-6">
+              Top performers for each completed event
+            </p>
+          </div>
+
+          {isLoadingEvents ? (
+            <div className="card text-center py-12">
+              <LoadingSpinner />
+              <p className="text-gray-400 mt-4">Loading event results...</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {completedEvents.map((event) => (
+                <div key={event.id} className="card">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-white">{event.name}</h3>
+                      <p className="text-gray-400">{new Date(event.date).toLocaleDateString()}</p>
+                    </div>
+                    <Link 
+                      to={`/leaderboard/event/${event.id}`}
+                      className="btn-outline text-sm"
+                    >
+                      View Full Results
+                    </Link>
+                  </div>
+
+                  {eventLeaderboards[event.id] && eventLeaderboards[event.id].length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-gray-700">
+                            <th className="text-left py-3 px-4 text-gray-300 font-medium text-sm">Rank</th>
+                            <th className="text-left py-3 px-4 text-gray-300 font-medium text-sm">Player</th>
+                            <th className="text-center py-3 px-4 text-gray-300 font-medium text-sm">Points</th>
+                            <th className="text-center py-3 px-4 text-gray-300 font-medium text-sm">Accuracy</th>
+                            <th className="text-center py-3 px-4 text-gray-300 font-medium text-sm">Picks</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {eventLeaderboards[event.id].slice(0, 5).map((entry, index) => (
+                            <tr 
+                              key={entry.user.id} 
+                              className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors"
+                            >
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-2">
+                                  {getRankIcon(entry.rank)}
+                                </div>
+                              </td>
+                              
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+                                    {entry.user.avatar ? (
+                                      <img 
+                                        src={entry.user.avatar} 
+                                        alt={`@${entry.user.username}`}
+                                        className="w-full h-full object-cover rounded-full"
+                                      />
+                                    ) : (
+                                      <span className="text-xs font-bold text-white">
+                                        {entry.user.username.charAt(0).toUpperCase()}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-white text-sm">
+                                      @{entry.user.username}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              
+                              <td className="py-3 px-4 text-center">
+                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${getRankColor(entry.rank)}`}>
+                                  {entry.stats.totalPoints}
+                                </span>
+                              </td>
+                              
+                              <td className="py-3 px-4 text-center">
+                                <span className="text-white font-medium text-sm">
+                                  {entry.stats.accuracy}
+                                </span>
+                              </td>
+                              
+                              <td className="py-3 px-4 text-center">
+                                <span className="text-gray-300 text-sm">
+                                  {entry.stats.correctPicks}/{entry.stats.totalPicks}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-400">No results available for this event yet.</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
+
     </div>
   );
 };
