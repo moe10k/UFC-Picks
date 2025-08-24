@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { eventsAPI, leaderboardAPI, picksAPI } from '../services/api';
 import { EventWithFights, UserStats } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { formatFighterRecord } from '../utils/formatRecord';
 import toast from 'react-hot-toast';
 
 const Dashboard: React.FC = () => {
@@ -166,7 +167,7 @@ const Dashboard: React.FC = () => {
                       <p className="text-sm text-gray-400">"{fight.fighter1Nick}"</p>
                     )}
                     <p className="text-xs text-gray-500 mt-1">
-                      {fight.fighter1Record || 'N/A'}
+                      {formatFighterRecord(fight.fighter1Record)}
                     </p>
                   </div>
 
@@ -195,7 +196,7 @@ const Dashboard: React.FC = () => {
                       <p className="text-sm text-gray-400">"{fight.fighter2Nick}"</p>
                     )}
                     <p className="text-xs text-gray-500 mt-1">
-                      {fight.fighter2Record || 'N/A'}
+                      {formatFighterRecord(fight.fighter2Record)}
                     </p>
                   </div>
                 </div>

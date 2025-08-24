@@ -6,6 +6,7 @@ import { EventWithFights } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Breadcrumb from '../components/Breadcrumb';
 import toast from 'react-hot-toast';
+import { formatFighterRecord } from '../utils/formatRecord';
 
 interface FightResult {
   fightNumber: number;
@@ -216,14 +217,14 @@ const AdminEventResults: React.FC = () => {
                       <h4 className="font-semibold text-white">{fight.fighter1Name}</h4>
                       {fight.fighter1Nick && <p className="text-gray-400">"{fight.fighter1Nick}"</p>}
                       <p className="text-sm text-gray-500">
-                        {fight.fighter1Record || 'N/A'}
+                        {formatFighterRecord(fight.fighter1Record)}
                       </p>
                     </div>
                     <div className="text-center p-4 bg-gray-800 rounded-lg">
                       <h4 className="font-semibold text-white">{fight.fighter2Name}</h4>
                       {fight.fighter2Nick && <p className="text-gray-400">"{fight.fighter2Nick}"</p>}
                       <p className="text-sm text-gray-500">
-                        {fight.fighter2Record || 'N/A'}
+                        {formatFighterRecord(fight.fighter2Record)}
                       </p>
                     </div>
                   </div>
