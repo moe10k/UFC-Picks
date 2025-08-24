@@ -1,6 +1,7 @@
 const express = require('express');
 const { Op, fn, col } = require('sequelize');
 const User = require('../models/User');
+const UserStats = require('../models/UserStats');
 const Pick = require('../models/Pick');
 const Event = require('../models/Event');
 
@@ -13,90 +14,36 @@ router.get('/', async (req, res) => {
   try {
     const { limit = 50, page = 1 } = req.query;
 
-    // Get users with their stats, sorted by total points
-    const { count, rows: users } = await User.findAndCountAll({
-      where: { isActive: true },
-      attributes: ['id', 'username', 'avatar', 'totalPicks', 'correctPicks', 'totalPoints', 'eventsParticipated', 'bestEventScore', 'currentStreak', 'longestStreak'],
+    // Get users with their stats from UserStats table, sorted by total points
+    const { count, rows: userStats } = await UserStats.findAndCountAll({
+      include: [{
+        model: User,
+        as: 'user',
+        where: { isActive: true },
+        attributes: ['id', 'username', 'avatar']
+      }],
       order: [['totalPoints', 'DESC'], ['correctPicks', 'DESC']],
       limit: parseInt(limit),
       offset: (parseInt(page) - 1) * parseInt(limit)
     });
 
-    // Validate totals for each user to ensure accuracy
-    const validatedUsers = await Promise.all(users.map(async (user) => {
-      // Get actual totals from user's scored picks
-      const actualPicks = await Pick.findAll({
-        where: { 
-          user_id: user.id, 
-          isScored: true 
-        },
-        include: [{
-          model: Event,
-          as: 'event',
-          where: { isActive: true }
-        }]
-      });
-      
-      let actualTotalPoints = 0;
-      let actualCorrectPicks = 0;
-      let actualTotalPicks = 0;
-      let actualEventsParticipated = 0;
-      let actualBestEventScore = 0;
-      
-      for (const pick of actualPicks) {
-        actualTotalPoints += pick.totalPoints || 0;
-        actualCorrectPicks += pick.correctPicks || 0;
-        actualTotalPicks += pick.picks?.length || 0;
-        actualEventsParticipated += 1;
-        actualBestEventScore = Math.max(actualBestEventScore, pick.totalPoints || 0);
-      }
-      
-      // Check if stored totals match actual totals
-      const hasDiscrepancy = 
-        user.totalPoints !== actualTotalPoints ||
-        user.correctPicks !== actualCorrectPicks ||
-        user.totalPicks !== actualTotalPicks ||
-        user.eventsParticipated !== actualEventsParticipated ||
-        user.bestEventScore !== actualBestEventScore;
-      
-      if (hasDiscrepancy) {
-        console.warn(`⚠️  Data discrepancy detected for user ${user.username}:`);
-        console.warn(`  Stored: ${user.totalPoints} points, ${user.correctPicks}/${user.totalPicks} correct`);
-        console.warn(`  Actual: ${actualTotalPoints} points, ${actualCorrectPicks}/${actualTotalPicks} correct`);
-        
-        // Use actual totals for display
-        return {
-          ...user.toJSON(),
-          totalPoints: actualTotalPoints,
-          correctPicks: actualCorrectPicks,
-          totalPicks: actualTotalPicks,
-          eventsParticipated: actualEventsParticipated,
-          bestEventScore: actualBestEventScore
-        };
-      }
-      
-      return user;
-    }));
-
-    // Calculate rankings using validated data
-    const leaderboard = validatedUsers.map((user, index) => ({
+    // Transform data for frontend
+    const leaderboard = userStats.map((stats, index) => ({
       rank: (parseInt(page) - 1) * parseInt(limit) + index + 1,
       user: {
-        id: user.id,
-        username: user.username,
-        avatar: user.avatar
+        id: stats.user.id,
+        username: stats.user.username,
+        avatar: stats.user.avatar
       },
       stats: {
-        totalPoints: user.totalPoints,
-        totalPicks: user.totalPicks,
-        correctPicks: user.correctPicks,
-        accuracy: user.totalPicks > 0 
-          ? ((user.correctPicks / user.totalPicks) * 100).toFixed(1)
-          : '0.0',
-        eventsParticipated: user.eventsParticipated,
-        bestEventScore: user.bestEventScore,
-        currentStreak: user.currentStreak,
-        longestStreak: user.longestStreak
+        totalPoints: stats.totalPoints,
+        totalPicks: stats.totalPicks,
+        correctPicks: stats.correctPicks,
+        accuracy: stats.getAccuracy(),
+        eventsParticipated: stats.eventsParticipated,
+        bestEventScore: stats.bestEventScore,
+        currentStreak: stats.currentStreak,
+        longestStreak: stats.longestStreak
       }
     }));
 
@@ -123,30 +70,26 @@ router.get('/event/:eventId', async (req, res) => {
     const { eventId } = req.params;
     const { limit = 50, page = 1 } = req.query;
 
-    // Get event details
-    const event = await Event.findByPk(eventId);
-    if (!event) {
-      return res.status(404).json({ message: 'Event not found' });
-    }
-
-    // Get all picks for this event that have been scored
+    // Get picks for this specific event, sorted by points
     const { count, rows: picks } = await Pick.findAndCountAll({
       where: { 
-        event_id: eventId, 
-        isSubmitted: true,
-        isScored: true 
+        event_id: eventId,
+        isScored: true
       },
-      include: [{
-        model: User,
-        as: 'user',
-        attributes: ['id', 'username', 'avatar']
-      }],
+      include: [
+        {
+          model: User,
+          as: 'user',
+          where: { isActive: true },
+          attributes: ['id', 'username', 'avatar']
+        }
+      ],
       order: [['totalPoints', 'DESC'], ['correctPicks', 'DESC']],
       limit: parseInt(limit),
       offset: (parseInt(page) - 1) * parseInt(limit)
     });
 
-    // Calculate rankings
+    // Transform data for frontend
     const leaderboard = picks.map((pick, index) => ({
       rank: (parseInt(page) - 1) * parseInt(limit) + index + 1,
       user: {
@@ -156,22 +99,14 @@ router.get('/event/:eventId', async (req, res) => {
       },
       stats: {
         totalPoints: pick.totalPoints,
+        totalPicks: pick.totalPicks,
         correctPicks: pick.correctPicks,
-        totalPicks: pick.picks.length,
-        accuracy: pick.picks.length > 0 
-          ? ((pick.correctPicks / pick.picks.length) * 100).toFixed(1)
-          : '0.0'
-      },
-      submittedAt: pick.createdAt
+        accuracy: pick.getAccuracyDecimal(),
+        submittedAt: pick.submittedAt
+      }
     }));
 
     res.json({
-      event: {
-        id: event.id,
-        name: event.name,
-        date: event.date,
-        status: event.status
-      },
       leaderboard,
       pagination: {
         current: parseInt(page),
@@ -187,66 +122,86 @@ router.get('/event/:eventId', async (req, res) => {
 });
 
 // @route   GET /api/leaderboard/user/:userId
-// @desc    Get user's ranking and stats
-// @access  Public
+// @desc    Get user's leaderboard position and stats
+// @access  Private
 router.get('/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const user = await User.findByPk(userId);
+    // Get user's stats
+    const userStats = await UserStats.findOne({
+      where: { userId },
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['id', 'username', 'avatar']
+      }]
+    });
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    if (!userStats) {
+      return res.status(404).json({ message: 'User stats not found' });
     }
 
-    // Calculate global rank with tie-breaker on correctPicks then totalPicks
-    const usersOrdered = await User.findAll({
-      where: { isActive: true },
-      attributes: ['id', 'totalPoints', 'correctPicks', 'totalPicks'],
-      order: [
-        ['totalPoints', 'DESC'],
-        ['correctPicks', 'DESC'],
-        ['totalPicks', 'DESC']
-      ]
+    // Get user's global rank
+    const globalRank = await UserStats.count({
+      where: {
+        totalPoints: { [Op.gt]: userStats.totalPoints }
+      }
     });
-    const index = usersOrdered.findIndex(u => u.id === user.id);
-    const globalRank = index === -1 ? usersOrdered.length : index;
+
+    // Get user's rank in their events participated
+    const eventsRank = await UserStats.count({
+      where: {
+        eventsParticipated: { [Op.gt]: userStats.eventsParticipated }
+      }
+    });
 
     // Get user's recent picks
     const recentPicks = await Pick.findAll({
-      where: { user_id: userId },
-      include: [{
-        model: Event,
-        as: 'event',
-        attributes: ['id', 'name', 'date', 'status']
-      }],
+      where: { userId },
+      include: [
+        {
+          model: Event,
+          as: 'event',
+          attributes: ['id', 'name', 'date']
+        }
+      ],
       order: [['createdAt', 'DESC']],
       limit: 5
     });
 
     res.json({
       user: {
-        id: user.id,
-        username: user.username,
-        avatar: user.avatar
+        id: userStats.user.id,
+        username: userStats.user.username,
+        avatar: userStats.user.avatar
       },
       stats: {
-        globalRank: globalRank + 1,
-        totalPoints: user.totalPoints,
-        totalPicks: user.totalPicks,
-        correctPicks: user.correctPicks,
-        accuracy: user.totalPicks > 0 
-          ? ((user.correctPicks / user.totalPicks) * 100).toFixed(1)
-          : '0.0',
-        eventsParticipated: user.eventsParticipated,
-        bestEventScore: user.bestEventScore,
-        currentStreak: user.currentStreak,
-        longestStreak: user.longestStreak
+        totalPoints: userStats.totalPoints,
+        totalPicks: userStats.totalPicks,
+        correctPicks: userStats.correctPicks,
+        accuracy: userStats.getAccuracy(),
+        averageAccuracy: userStats.getAccuracyDecimal(),
+        eventsParticipated: userStats.eventsParticipated,
+        bestEventScore: userStats.bestEventScore,
+        currentStreak: userStats.currentStreak,
+        longestStreak: userStats.longestStreak
       },
-      recentPicks
+      rankings: {
+        global: globalRank + 1,
+        events: eventsRank + 1
+      },
+      recentPicks: recentPicks.map(pick => ({
+        id: pick.id,
+        event: pick.event,
+        totalPoints: pick.totalPoints,
+        correctPicks: pick.correctPicks,
+        totalPicks: pick.totalPicks,
+        submittedAt: pick.submittedAt
+      }))
     });
   } catch (error) {
-    console.error('Get user ranking error:', error);
+    console.error('Get user leaderboard position error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -256,42 +211,68 @@ router.get('/user/:userId', async (req, res) => {
 // @access  Public
 router.get('/stats', async (req, res) => {
   try {
-    // Get total number of active users
-    const totalUsers = await User.count({ where: { isActive: true } });
-
-    // Get total number of events
-    const totalEvents = await Event.count({ where: { isActive: true } });
-
-    // Get total number of picks submitted
-    const totalPicks = await Pick.count({ where: { isSubmitted: true } });
-
-    // Get average points per user
-    const avgPointsResult = await User.findAll({
-      where: { isActive: true },
-      attributes: [[fn('AVG', col('totalPoints')), 'avgPoints']],
-      raw: true
+    // Get overall statistics
+    const totalUsers = await UserStats.count();
+    const totalPicks = await UserStats.sum('totalPicks') || 0;
+    const totalPoints = await UserStats.sum('totalPoints') || 0;
+    const averageAccuracy = await UserStats.findOne({
+      attributes: [
+        [fn('AVG', col('average_accuracy')), 'avgAccuracy']
+      ]
     });
-    const avgPoints = avgPointsResult.length > 0 ? Math.round(avgPointsResult[0].avgPoints || 0) : 0;
 
-    // Get top 3 users
-    const topUsers = await User.findAll({
-      where: { isActive: true },
-      attributes: ['id', 'username', 'avatar', 'totalPoints'],
-      order: [['totalPoints', 'DESC']],
-      limit: 3
+    // Get top performers
+    const topPoints = await UserStats.findOne({
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['username']
+      }],
+      order: [['totalPoints', 'DESC']]
+    });
+
+    const topAccuracy = await UserStats.findOne({
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['username']
+      }],
+      where: {
+        totalPicks: { [Op.gte]: 5 } // Minimum 5 picks to qualify
+      },
+      order: [['averageAccuracy', 'DESC']]
+    });
+
+    const topStreak = await UserStats.findOne({
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['username']
+      }],
+      order: [['longestStreak', 'DESC']]
     });
 
     res.json({
-      totalUsers,
-      totalEvents,
-      totalPicks,
-      avgPoints,
-      topUsers: topUsers.map((user, index) => ({
-        rank: index + 1,
-        username: user.username,
-        totalPoints: user.totalPoints,
-        avatar: user.avatar
-      }))
+      overall: {
+        totalUsers,
+        totalPicks,
+        totalPoints,
+        averageAccuracy: averageAccuracy?.dataValues?.avgAccuracy || 0
+      },
+      topPerformers: {
+        mostPoints: topPoints ? {
+          username: topPoints.user.username,
+          points: topPoints.totalPoints
+        } : null,
+        bestAccuracy: topAccuracy ? {
+          username: topAccuracy.user.username,
+          accuracy: topAccuracy.getAccuracy()
+        } : null,
+        longestStreak: topStreak ? {
+          username: topStreak.user.username,
+          streak: topStreak.longestStreak
+        } : null
+      }
     });
   } catch (error) {
     console.error('Get leaderboard stats error:', error);

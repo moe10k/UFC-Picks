@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { eventsAPI, leaderboardAPI, picksAPI } from '../services/api';
-import { Event, UserStats } from '../types';
+import { EventWithFights, UserStats } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const [upcomingEvent, setUpcomingEvent] = useState<Event | null>(null);
+  const [upcomingEvent, setUpcomingEvent] = useState<EventWithFights | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [userRank, setUserRank] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,9 +28,9 @@ const Dashboard: React.FC = () => {
           leaderboardAPI.getUserRanking(user?.id || 0)
         ]);
         
-        setUpcomingEvent(eventResponse.event);
+        setUpcomingEvent(eventResponse.event as EventWithFights);
         setUserStats(userRankingResponse.stats);
-        setUserRank(userRankingResponse.stats.globalRank);
+        setUserRank(userRankingResponse.rankings?.global || null);
 
         // Check if user already has picks for this event
         if (eventResponse.event?.id) {
@@ -96,7 +96,7 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  const mainCardFights = upcomingEvent.fights.filter(fight => fight.isMainCard);
+  const mainCardFights = upcomingEvent.fights ? upcomingEvent.fights.filter(fight => fight.isMainCard) : [];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -136,7 +136,7 @@ const Dashboard: React.FC = () => {
           {/* Main Card Fights */}
           <div className="space-y-4">
             <h3 className="text-xl font-semibold text-white mb-4">Main Card Fights</h3>
-            {mainCardFights.map((fight) => (
+            {mainCardFights && mainCardFights.length > 0 ? mainCardFights.map((fight) => (
               <div key={fight.fightNumber} className="fight-card">
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-sm text-ufc-red font-semibold">
@@ -149,25 +149,24 @@ const Dashboard: React.FC = () => {
                   {/* Fighter 1 */}
                   <div className="fighter-card text-center">
                     <div className="w-16 h-16 bg-gray-600 rounded-full mx-auto mb-2 flex items-center justify-center">
-                      {fight.fighter1.image ? (
+                      {fight.fighter1Image ? (
                         <img 
-                          src={fight.fighter1.image} 
-                          alt={fight.fighter1.name}
+                          src={fight.fighter1Image} 
+                          alt={fight.fighter1Name}
                           className="w-full h-full object-cover rounded-full"
                         />
                       ) : (
                         <span className="text-white font-bold text-lg">
-                          {fight.fighter1.name.charAt(0)}
+                          {fight.fighter1Name.charAt(0)}
                         </span>
                       )}
                     </div>
-                    <h4 className="font-semibold text-white">{fight.fighter1.name}</h4>
-                    {fight.fighter1.nickname && (
-                      <p className="text-sm text-gray-400">"{fight.fighter1.nickname}"</p>
+                    <h4 className="font-semibold text-white">{fight.fighter1Name}</h4>
+                    {fight.fighter1Nick && (
+                      <p className="text-sm text-gray-400">"{fight.fighter1Nick}"</p>
                     )}
                     <p className="text-xs text-gray-500 mt-1">
-                      {fight.fighter1.record.wins}-{fight.fighter1.record.losses}
-                      {fight.fighter1.record.draws > 0 && `-${fight.fighter1.record.draws}`}
+                      {fight.fighter1Record || 'N/A'}
                     </p>
                   </div>
 
@@ -179,30 +178,33 @@ const Dashboard: React.FC = () => {
                   {/* Fighter 2 */}
                   <div className="fighter-card text-center">
                     <div className="w-16 h-16 bg-gray-600 rounded-full mx-auto mb-2 flex items-center justify-center">
-                      {fight.fighter2.image ? (
+                      {fight.fighter2Image ? (
                         <img 
-                          src={fight.fighter2.image} 
-                          alt={fight.fighter2.name}
+                          src={fight.fighter2Image} 
+                          alt={fight.fighter2Name}
                           className="w-full h-full object-cover rounded-full"
                         />
                       ) : (
                         <span className="text-white font-bold text-lg">
-                          {fight.fighter2.name.charAt(0)}
+                          {fight.fighter2Name.charAt(0)}
                         </span>
                       )}
                     </div>
-                    <h4 className="font-semibold text-white">{fight.fighter2.name}</h4>
-                    {fight.fighter2.nickname && (
-                      <p className="text-sm text-gray-400">"{fight.fighter2.nickname}"</p>
+                    <h4 className="font-semibold text-white">{fight.fighter2Name}</h4>
+                    {fight.fighter2Nick && (
+                      <p className="text-sm text-gray-400">"{fight.fighter2Nick}"</p>
                     )}
                     <p className="text-xs text-gray-500 mt-1">
-                      {fight.fighter2.record.wins}-{fight.fighter2.record.losses}
-                      {fight.fighter2.record.draws > 0 && `-${fight.fighter2.record.draws}`}
+                      {fight.fighter2Record || 'N/A'}
                     </p>
                   </div>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="text-center py-8 text-gray-400">
+                <p>No main card fights available yet.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -266,9 +268,7 @@ const Dashboard: React.FC = () => {
               
               <div className="stat-item">
                 <div className="text-lg font-semibold text-white">
-                  {userStats.totalPicks > 0 
-                    ? Math.round((userStats.correctPicks / userStats.totalPicks) * 100)
-                    : 0}%
+                  {userStats.averageAccuracy ? `${userStats.averageAccuracy.toFixed(1)}%` : '0%'}
                 </div>
                 <div className="text-sm text-gray-400">Accuracy</div>
               </div>

@@ -10,7 +10,9 @@ import {
   AuthResponse,
   EventsResponse,
   PicksResponse,
-  LeaderboardStats
+  LeaderboardStats,
+  EventWithFights,
+  UserWithStats
 } from '../types';
 
 // In production, use the same origin (relative URL) since the API is served from the same server
@@ -70,7 +72,7 @@ export const authAPI = {
     return response.data;
   },
 
-  getProfile: async (): Promise<{ user: User }> => {
+  getProfile: async (): Promise<{ user: UserWithStats }> => {
     const response = await api.get('/auth/me');
     return response.data;
   },
@@ -154,12 +156,12 @@ export const eventsAPI = {
     return response.data;
   },
 
-  getUpcoming: async (): Promise<{ event: Event }> => {
+  getUpcoming: async (): Promise<{ event: EventWithFights }> => {
     const response = await api.get('/events/upcoming');
     return response.data;
   },
 
-  getById: async (id: string | number): Promise<{ event: Event }> => {
+  getById: async (id: string | number): Promise<{ event: EventWithFights }> => {
     const response = await api.get(`/events/${id}`);
     return response.data;
   },
@@ -259,7 +261,11 @@ export const leaderboardAPI = {
 
   getUserRanking: async (userId: string | number): Promise<{
     user: User;
-    stats: UserStats & { globalRank: number };
+    stats: UserStats;
+    rankings: {
+      global: number;
+      events: number;
+    };
     recentPicks: UserPick[];
   }> => {
     const response = await api.get(`/leaderboard/user/${userId}`);

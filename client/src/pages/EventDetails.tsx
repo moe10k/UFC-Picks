@@ -3,13 +3,13 @@ import { useParams, Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { CalendarIcon, MapPinIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { eventsAPI } from '../services/api';
-import { Event } from '../types';
+import { EventWithFights } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
 
 const EventDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [event, setEvent] = useState<Event | null>(null);
+  const [event, setEvent] = useState<EventWithFights | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -19,7 +19,7 @@ const EventDetails: React.FC = () => {
       try {
         setIsLoading(true);
         const { event: eventData } = await eventsAPI.getById(id);
-        setEvent(eventData);
+        setEvent(eventData as EventWithFights);
       } catch (error: any) {
         console.error('Error fetching event:', error);
         toast.error('Failed to load event details');
@@ -183,10 +183,10 @@ const EventDetails: React.FC = () => {
                   {/* Fighter 1 */}
                   <div className="fighter-card text-center">
                     <div className="w-20 h-20 bg-gray-700 rounded-full mx-auto mb-3 flex items-center justify-center">
-                      {fight.fighter1.image ? (
+                      {fight.fighter1Image ? (
                         <img 
-                          src={fight.fighter1.image} 
-                          alt={fight.fighter1.name}
+                          src={fight.fighter1Image} 
+                          alt={fight.fighter1Name}
                           className="w-full h-full object-cover rounded-full"
                         />
                       ) : (
@@ -194,13 +194,13 @@ const EventDetails: React.FC = () => {
                       )}
                     </div>
                     <h3 className="font-bold text-white text-lg mb-1">
-                      {fight.fighter1.name}
+                      {fight.fighter1Name}
                     </h3>
-                    {fight.fighter1.nickname && (
-                      <p className="text-ufc-red text-sm mb-2">"{fight.fighter1.nickname}"</p>
+                    {fight.fighter1Nick && (
+                      <p className="text-ufc-red text-sm mb-2">"{fight.fighter1Nick}"</p>
                     )}
                     <p className="text-gray-400 text-sm">
-                      {fight.fighter1.record.wins}-{fight.fighter1.record.losses}-{fight.fighter1.record.draws}
+                      {fight.fighter1Record || 'N/A'}
                     </p>
                   </div>
                   
@@ -208,12 +208,12 @@ const EventDetails: React.FC = () => {
                   <div className="flex items-center justify-center">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-ufc-red mb-2">VS</div>
-                      {fight.result && (
+                      {fight.isCompleted && (
                         <div className="text-sm text-gray-400">
                           <div className="font-medium">
-                            Winner: {fight.result.winner === 'fighter1' ? fight.fighter1.name : fight.fighter2.name}
+                            Winner: {fight.winner === 'fighter1' ? fight.fighter1Name : fight.fighter2Name}
                           </div>
-                          <div>{fight.result.method} - Round {fight.result.round}</div>
+                          <div>{fight.method} - Round {fight.round}</div>
                         </div>
                       )}
                     </div>
@@ -222,10 +222,10 @@ const EventDetails: React.FC = () => {
                   {/* Fighter 2 */}
                   <div className="fighter-card text-center">
                     <div className="w-20 h-20 bg-gray-700 rounded-full mx-auto mb-3 flex items-center justify-center">
-                      {fight.fighter2.image ? (
+                      {fight.fighter2Image ? (
                         <img 
-                          src={fight.fighter2.image} 
-                          alt={fight.fighter2.name}
+                          src={fight.fighter2Image} 
+                          alt={fight.fighter2Name}
                           className="w-full h-full object-cover rounded-full"
                         />
                       ) : (
@@ -233,13 +233,13 @@ const EventDetails: React.FC = () => {
                       )}
                     </div>
                     <h3 className="font-bold text-white text-lg mb-1">
-                      {fight.fighter2.name}
+                      {fight.fighter2Name}
                     </h3>
-                    {fight.fighter2.nickname && (
-                      <p className="text-ufc-red text-sm mb-2">"{fight.fighter2.nickname}"</p>
+                    {fight.fighter2Nick && (
+                      <p className="text-ufc-red text-sm mb-2">"{fight.fighter2Nick}"</p>
                     )}
                     <p className="text-gray-400 text-sm">
-                      {fight.fighter2.record.wins}-{fight.fighter2.record.losses}-{fight.fighter2.record.draws}
+                      {fight.fighter2Record || 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -279,10 +279,10 @@ const EventDetails: React.FC = () => {
                   {/* Fighter 1 */}
                   <div className="fighter-card text-center">
                     <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-3 flex items-center justify-center">
-                      {fight.fighter1.image ? (
+                      {fight.fighter1Image ? (
                         <img 
-                          src={fight.fighter1.image} 
-                          alt={fight.fighter1.name}
+                          src={fight.fighter1Image} 
+                          alt={fight.fighter1Name}
                           className="w-full h-full object-cover rounded-full"
                         />
                       ) : (
@@ -290,13 +290,13 @@ const EventDetails: React.FC = () => {
                       )}
                     </div>
                     <h3 className="font-bold text-white mb-1">
-                      {fight.fighter1.name}
+                      {fight.fighter1Name}
                     </h3>
-                    {fight.fighter1.nickname && (
-                      <p className="text-ufc-red text-xs mb-1">"{fight.fighter1.nickname}"</p>
+                    {fight.fighter1Nick && (
+                      <p className="text-ufc-red text-xs mb-1">"{fight.fighter1Nick}"</p>
                     )}
                     <p className="text-gray-400 text-xs">
-                      {fight.fighter1.record.wins}-{fight.fighter1.record.losses}-{fight.fighter1.record.draws}
+                      {fight.fighter1Record || 'N/A'}
                     </p>
                   </div>
                   
@@ -304,12 +304,12 @@ const EventDetails: React.FC = () => {
                   <div className="flex items-center justify-center">
                     <div className="text-center">
                       <div className="text-xl font-bold text-gray-400 mb-2">VS</div>
-                      {fight.result && (
+                      {fight.isCompleted && (
                         <div className="text-xs text-gray-400">
                           <div className="font-medium">
-                            {fight.result.winner === 'fighter1' ? fight.fighter1.name : fight.fighter2.name}
+                            {fight.winner === 'fighter1' ? fight.fighter1Name : fight.fighter2Name}
                           </div>
-                          <div>{fight.result.method} - R{fight.result.round}</div>
+                          <div>{fight.method} - R{fight.round}</div>
                         </div>
                       )}
                     </div>
@@ -318,10 +318,10 @@ const EventDetails: React.FC = () => {
                   {/* Fighter 2 */}
                   <div className="fighter-card text-center">
                     <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-3 flex items-center justify-center">
-                      {fight.fighter2.image ? (
+                      {fight.fighter2Image ? (
                         <img 
-                          src={fight.fighter2.image} 
-                          alt={fight.fighter2.name}
+                          src={fight.fighter2Image} 
+                          alt={fight.fighter2Name}
                           className="w-full h-full object-cover rounded-full"
                         />
                       ) : (
@@ -329,13 +329,13 @@ const EventDetails: React.FC = () => {
                       )}
                     </div>
                     <h3 className="font-bold text-white mb-1">
-                      {fight.fighter2.name}
+                      {fight.fighter2Name}
                     </h3>
-                    {fight.fighter2.nickname && (
-                      <p className="text-ufc-red text-xs mb-1">"{fight.fighter2.nickname}"</p>
+                    {fight.fighter2Nick && (
+                      <p className="text-ufc-red text-xs mb-1">"{fight.fighter2Nick}"</p>
                     )}
                     <p className="text-gray-400 text-xs">
-                      {fight.fighter2.record.wins}-{fight.fighter2.record.losses}-{fight.fighter2.record.draws}
+                      {fight.fighter2Record || 'N/A'}
                     </p>
                   </div>
                 </div>

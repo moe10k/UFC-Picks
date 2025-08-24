@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { eventsAPI } from '../services/api';
-import { Event } from '../types';
+import { EventWithFights } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
 
@@ -12,7 +12,7 @@ const AdminEditEvent: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [event, setEvent] = useState<Event | null>(null);
+  const [event, setEvent] = useState<EventWithFights | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -261,51 +261,44 @@ const AdminEditEvent: React.FC = () => {
                       {fight.isCoMainEvent && <span className="px-2 py-1 bg-orange-600 text-white text-xs rounded">Co-Main</span>}
                     </div>
                   </div>
-                  {fight.isCompleted && (
-                    <span className="px-2 py-1 bg-green-600 text-white text-xs rounded">
-                      Completed
-                    </span>
-                  )}
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="text-center">
-                    <h4 className="font-semibold text-white">{fight.fighter1.name}</h4>
-                    {fight.fighter1.nickname && <p className="text-gray-400">"{fight.fighter1.nickname}"</p>}
+                    <h4 className="font-semibold text-white">{fight.fighter1Name}</h4>
+                    {fight.fighter1Nick && <p className="text-gray-400">"{fight.fighter1Nick}"</p>}
                     <p className="text-sm text-gray-500">
-                      {fight.fighter1.record.wins}-{fight.fighter1.record.losses}
-                      {fight.fighter1.record.draws > 0 && `-${fight.fighter1.record.draws}`}
+                      {fight.fighter1Record || 'N/A'}
                     </p>
                   </div>
                   <div className="text-center">
-                    <h4 className="font-semibold text-white">{fight.fighter2.name}</h4>
-                    {fight.fighter2.nickname && <p className="text-gray-400">"{fight.fighter2.nickname}"</p>}
+                    <h4 className="font-semibold text-white">{fight.fighter2Name}</h4>
+                    {fight.fighter2Nick && <p className="text-gray-400">"{fight.fighter2Nick}"</p>}
                     <p className="text-sm text-gray-500">
-                      {fight.fighter2.record.wins}-{fight.fighter2.record.losses}
-                      {fight.fighter2.record.draws > 0 && `-${fight.fighter2.record.draws}`}
+                      {fight.fighter2Record || 'N/A'}
                     </p>
                   </div>
                 </div>
                 
-                {fight.result && (
+                {fight.isCompleted && (
                   <div className="mt-4 p-3 bg-gray-700 rounded-lg">
                     <h5 className="font-semibold text-white mb-2">Result</h5>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
                         <span className="text-gray-400">Winner:</span>
-                        <span className="text-white ml-2">{fight.result.winner}</span>
+                        <span className="text-white ml-2">{fight.winner}</span>
                       </div>
                       <div>
                         <span className="text-gray-400">Method:</span>
-                        <span className="text-white ml-2">{fight.result.method}</span>
+                        <span className="text-white ml-2">{fight.method}</span>
                       </div>
                       <div>
                         <span className="text-gray-400">Round:</span>
-                        <span className="text-white ml-2">{fight.result.round}</span>
+                        <span className="text-white ml-2">{fight.round}</span>
                       </div>
                       <div>
                         <span className="text-gray-400">Time:</span>
-                        <span className="text-white ml-2">{fight.result.time}</span>
+                        <span className="text-white ml-2">{fight.time}</span>
                       </div>
                     </div>
                   </div>

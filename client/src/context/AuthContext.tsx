@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { User } from '../types';
+import { UserWithStats } from '../types';
 import { authAPI } from '../services/api';
 
 interface AuthState {
-  user: User | null;
+  user: UserWithStats | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -11,12 +11,12 @@ interface AuthState {
 
 type AuthAction =
   | { type: 'LOGIN_START' }
-  | { type: 'LOGIN_SUCCESS'; payload: { user: User; token: string } }
+  | { type: 'LOGIN_SUCCESS'; payload: { user: UserWithStats; token: string } }
   | { type: 'LOGIN_FAILURE' }
   | { type: 'LOGOUT' }
-  | { type: 'UPDATE_USER'; payload: User }
+  | { type: 'UPDATE_USER'; payload: UserWithStats }
   | { type: 'LOAD_USER_START' }
-  | { type: 'LOAD_USER_SUCCESS'; payload: User }
+  | { type: 'LOAD_USER_SUCCESS'; payload: UserWithStats }
   | { type: 'LOAD_USER_FAILURE' };
 
 const initialState: AuthState = {

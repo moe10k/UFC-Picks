@@ -2,8 +2,12 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { Op } = require('sequelize');
 const Event = require('../models/Event');
+const Fight = require('../models/Fight');
+const Pick = require('../models/Pick');
+const PickDetail = require('../models/PickDetail');
+const UserStats = require('../models/UserStats');
+const User = require('../models/User');
 const { auth, adminAuth } = require('../middleware/auth');
-const Pick = require('../models/Pick'); // Added missing import for Pick
 
 const router = express.Router();
 
@@ -58,7 +62,7 @@ const transformEventForFrontend = (event) => {
   return {
     ...eventData,
     venue: event.getVenue(),
-    mainCardFights: event.getMainCardFights(),
+    mainCardFights: event.fights ? event.fights.filter(f => f.isMainCard) : [],
     isUpcoming: event.isUpcoming(),
     formattedDate: event.getFormattedDate()
   };
@@ -78,6 +82,7 @@ router.get('/', async (req, res) => {
 
     const { count, rows: events } = await Event.findAndCountAll({
       where: whereClause,
+      include: [{ model: Fight, as: 'fights' }],
       order: [['date', 'DESC']],
       limit: parseInt(limit),
       offset: (parseInt(page) - 1) * parseInt(limit)
@@ -111,6 +116,7 @@ router.get('/upcoming', async (req, res) => {
         status: 'upcoming',
         isActive: true
       },
+      include: [{ model: Fight, as: 'fights' }],
       order: [['date', 'ASC']]
     });
 
@@ -131,7 +137,9 @@ router.get('/upcoming', async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
-    const event = await Event.findByPk(req.params.id);
+    const event = await Event.findByPk(req.params.id, {
+      include: [{ model: Fight, as: 'fights' }]
+    });
     
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
@@ -183,11 +191,39 @@ router.post('/', adminAuth, validateEventInput, async (req, res) => {
       venueState: venue?.state || venueState || null,
       venueCountry: venue?.country || venueCountry,
       description,
-      fights,
       pickDeadline: new Date(pickDeadline)
     });
 
-    const transformedEvent = transformEventForFrontend(event);
+    // Create fights if provided
+    if (fights && Array.isArray(fights)) {
+      const fightPromises = fights.map(fightData => 
+        Fight.create({
+          eventId: event.id,
+          fightNumber: fightData.fightNumber,
+          weightClass: fightData.weightClass,
+          isMainCard: fightData.isMainCard || false,
+          isMainEvent: fightData.isMainEvent || false,
+          isCoMainEvent: fightData.isCoMainEvent || false,
+          fighter1Name: fightData.fighter1?.name || fightData.fighter1Name,
+          fighter2Name: fightData.fighter2?.name || fightData.fighter2Name,
+          fighter1Nick: fightData.fighter1?.nickname || fightData.fighter1Nick,
+          fighter2Nick: fightData.fighter2?.nickname || fightData.fighter2Nick,
+          fighter1Image: fightData.fighter1?.image || fightData.fighter1Image,
+          fighter2Image: fightData.fighter2?.image || fightData.fighter2Image,
+          fighter1Record: String(fightData.fighter1?.record || fightData.fighter1Record || ''),
+          fighter2Record: String(fightData.fighter2?.record || fightData.fighter2Record || '')
+        })
+      );
+      
+      await Promise.all(fightPromises);
+    }
+
+    // Reload event with fights
+    const eventWithFights = await Event.findByPk(event.id, {
+      include: [{ model: Fight, as: 'fights' }]
+    });
+
+    const transformedEvent = transformEventForFrontend(eventWithFights);
     res.status(201).json({ message: 'Event created successfully', event: transformedEvent });
   } catch (error) {
     console.error('Create event error:', error);
@@ -208,7 +244,9 @@ router.put('/:id', adminAuth, validateEventInput, async (req, res) => {
       });
     }
 
-    const event = await Event.findByPk(req.params.id);
+    const event = await Event.findByPk(req.params.id, {
+      include: [{ model: Fight, as: 'fights' }]
+    });
     
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
@@ -236,12 +274,44 @@ router.put('/:id', adminAuth, validateEventInput, async (req, res) => {
       venueState: venue?.state || venueState || event.venueState,
       venueCountry: venue?.country || venueCountry || event.venueCountry,
       description,
-      fights,
       status,
       pickDeadline: pickDeadline ? new Date(pickDeadline) : event.pickDeadline
     });
 
-    const transformedEvent = transformEventForFrontend(event);
+    // Update fights if provided
+    if (fights && Array.isArray(fights)) {
+      // Delete existing fights
+      await Fight.destroy({ where: { eventId: event.id } });
+      
+      // Create new fights
+      const fightPromises = fights.map(fightData => 
+        Fight.create({
+          eventId: event.id,
+          fightNumber: fightData.fightNumber,
+          weightClass: fightData.weightClass,
+          isMainCard: fightData.isMainCard || false,
+          isMainEvent: fightData.isMainEvent || false,
+          isCoMainEvent: fightData.isCoMainEvent || false,
+          fighter1Name: fightData.fighter1?.name || fightData.fighter1Name,
+          fighter2Name: fightData.fighter2?.name || fightData.fighter2Name,
+          fighter1Nick: fightData.fighter1?.nickname || fightData.fighter1Nick,
+          fighter2Nick: fightData.fighter2?.nickname || fightData.fighter2Nick,
+          fighter1Image: fightData.fighter1?.image || fightData.fighter1Image,
+          fighter2Image: fightData.fighter2?.image || fightData.fighter2Image,
+          fighter1Record: String(fightData.fighter1?.record || fightData.fighter1Record || ''),
+          fighter2Record: String(fightData.fighter2?.record || fightData.fighter2Record || '')
+        })
+      );
+      
+      await Promise.all(fightPromises);
+    }
+
+    // Reload event with fights
+    const updatedEvent = await Event.findByPk(event.id, {
+      include: [{ model: Fight, as: 'fights' }]
+    });
+
+    const transformedEvent = transformEventForFrontend(updatedEvent);
     res.json({ message: 'Event updated successfully', event: transformedEvent });
   } catch (error) {
     console.error('Update event error:', error);
@@ -254,7 +324,9 @@ router.put('/:id', adminAuth, validateEventInput, async (req, res) => {
 // @access  Private/Admin
 router.put('/:id/results', adminAuth, async (req, res) => {
   try {
-    const event = await Event.findByPk(req.params.id);
+    const event = await Event.findByPk(req.params.id, {
+      include: [{ model: Fight, as: 'fights' }]
+    });
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }
@@ -264,37 +336,39 @@ router.put('/:id/results', adminAuth, async (req, res) => {
       return res.status(400).json({ message: 'fightResults must be an array' });
     }
 
-    // Merge results into event.fights
-    const fights = [...event.fights];
-    const resultsByNumber = new Map(fightResults.map(r => [r.fightNumber, r]));
-    const updatedFights = fights.map(f => {
-      const r = resultsByNumber.get(f.fightNumber);
-      if (!r) return f;
-      return {
-        ...f,
-        result: {
-          winner: r.winner,
-          method: r.method,
-          round: r.round,
-          time: r.time || f.result?.time
-        },
-        isCompleted: true
-      };
-    });
+    // Update fight results
+    for (const result of fightResults) {
+      const fight = event.fights.find(f => f.fightNumber === result.fightNumber);
+      if (fight) {
+        await fight.update({
+          winner: result.winner,
+          method: result.method,
+          round: result.round,
+          time: result.time || fight.time,
+          isCompleted: true
+        });
+      }
+    }
 
-    event.fights = updatedFights;
-    event.status = 'completed';
-    await event.save();
+    // Update event status
+    await event.update({ status: 'completed' });
 
     // Score all submitted picks for this event
     const picks = await Pick.findAll({ 
       where: { event_id: event.id, isSubmitted: true },
-      include: [{
-        model: require('../models/User'),
-        as: 'user',
-        attributes: ['id', 'username', 'avatar']
-      }]
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'username', 'avatar']
+        },
+        {
+          model: PickDetail,
+          as: 'pickDetails'
+        }
+      ]
     });
+
     const usersById = new Map();
     console.log(`\n🏆 Scoring ${picks.length} picks for event: ${event.name} (ID: ${event.id})`);
     
@@ -304,50 +378,50 @@ router.put('/:id/results', adminAuth, async (req, res) => {
       const username = pick.user?.username || `User ${pick.user_id}`;
       console.log(`\n👤 Scoring picks for ${username} (Pick ID: ${pick.id}):`);
       
-      for (const p of pick.picks) {
-        const fight = updatedFights.find(f => f.fightNumber === p.fightNumber);
-        if (!fight || !fight.result) {
-          console.log(`  ⚠️  Fight ${p.fightNumber}: No result available`);
+      for (const pickDetail of pick.pickDetails) {
+        const fight = event.fights.find(f => f.id === pickDetail.fightId);
+        if (!fight || !fight.isCompleted) {
+          console.log(`  ⚠️  Fight ${fight?.fightNumber}: No result available`);
           continue;
         }
         
         let points = 0;
-        const fighter1Name = fight.fighter1?.name || 'Fighter 1';
-        const fighter2Name = fight.fighter2?.name || 'Fighter 2';
-        const winnerName = fight.result.winner === 'fighter1' ? fighter1Name : fighter2Name;
-        const pickedWinnerName = p.winner === 'fighter1' ? fighter1Name : fighter2Name;
+        const fighter1Name = fight.fighter1Name || 'Fighter 1';
+        const fighter2Name = fight.fighter2Name || 'Fighter 2';
+        const winnerName = fight.winner === 'fighter1' ? fighter1Name : fighter2Name;
+        const pickedWinnerName = pickDetail.predictedWinner === 'fighter1' ? fighter1Name : fighter2Name;
         
-        console.log(`  🥊 Fight ${p.fightNumber}: ${fighter1Name} vs ${fighter2Name}`);
-        console.log(`    📝 ${username} picked: ${pickedWinnerName} by ${p.method}${p.round ? ` in round ${p.round}` : ''}${p.time ? ` at ${p.time}` : ''}`);
-        console.log(`    🎯 Actual result: ${winnerName} by ${fight.result.method}${fight.result.round ? ` in round ${fight.result.round}` : ''}${fight.result.time ? ` at ${fight.result.time}` : ''}`);
+        console.log(`  🥊 Fight ${fight.fightNumber}: ${fighter1Name} vs ${fighter2Name}`);
+        console.log(`    📝 ${username} picked: ${pickedWinnerName} by ${pickDetail.predictedMethod}${pickDetail.predictedRound ? ` in round ${pickDetail.predictedRound}` : ''}${pickDetail.predictedTime ? ` at ${pickDetail.predictedTime}` : ''}`);
+        console.log(`    🎯 Actual result: ${winnerName} by ${fight.method}${fight.round ? ` in round ${fight.round}` : ''}${fight.time ? ` at ${fight.time}` : ''}`);
         
         // Check if winner prediction is correct
-        if (fight.result.winner === p.winner) {
+        if (fight.winner === pickDetail.predictedWinner) {
           points += 3;
           correctPicks += 1;
           console.log(`    ✅ Winner correct (+3 points)`);
           
           // Only award bonus points for method and round if winner is correct
           // Check if method prediction is correct
-          if (fight.result.method && fight.result.method === p.method) {
+          if (fight.method && fight.method === pickDetail.predictedMethod) {
             points += 1;
             console.log(`    ✅ Method correct (+1 bonus point)`);
             
             // Check if round prediction is correct (only for non-Decision methods)
-            if (fight.result.method !== 'Decision' && fight.result.round && p.round && fight.result.round === p.round) {
+            if (fight.method !== 'Decision' && fight.round && pickDetail.predictedRound && fight.round === pickDetail.predictedRound) {
               points += 1;
               console.log(`    ✅ Round correct (+1 bonus point)`);
               
               // Check if time prediction is correct (only for KO/TKO and Submission methods)
-              if ((fight.result.method === 'KO/TKO' || fight.result.method === 'Submission') && 
-                  fight.result.time && p.time && fight.result.time === p.time) {
+              if ((fight.method === 'KO/TKO' || fight.method === 'Submission') && 
+                  fight.time && pickDetail.predictedTime && fight.time === pickDetail.predictedTime) {
                 points += 1;
                 console.log(`    ✅ Time correct (+1 bonus point)`);
-              } else if ((fight.result.method === 'KO/TKO' || fight.result.method === 'Submission') && 
-                         fight.result.time && p.time) {
+              } else if ((fight.method === 'KO/TKO' || fight.method === 'Submission') && 
+                         fight.time && pickDetail.predictedTime) {
                 console.log(`    ❌ Time incorrect (no bonus point)`);
               }
-            } else if (fight.result.method !== 'Decision' && fight.result.round && p.round) {
+            } else if (fight.method !== 'Decision' && fight.round && pickDetail.predictedRound) {
               console.log(`    ❌ Round incorrect (no bonus point)`);
             }
           } else {
@@ -358,34 +432,51 @@ router.put('/:id/results', adminAuth, async (req, res) => {
         }
         
         console.log(`    💰 Points earned for this fight: ${points}`);
+        
+        // Update pick detail with results
+        await pickDetail.update({
+          pointsEarned: points,
+          isCorrect: fight.winner === pickDetail.predictedWinner,
+          scoredAt: new Date()
+        });
+        
         totalPoints += points;
       }
       
-      console.log(`  📊 ${username}'s final score: ${totalPoints} points (${correctPicks}/${pick.picks.length} fights correct)`);
-      pick.totalPoints = totalPoints;
-      pick.correctPicks = correctPicks;
-      pick.isScored = true;
-      pick.scoredAt = new Date();
-      await pick.save();
+      console.log(`  📊 ${username}'s final score: ${totalPoints} points (${correctPicks}/${pick.pickDetails.length} fights correct)`);
+      
+      // Update pick with totals
+      await pick.update({
+        totalPoints,
+        correctPicks,
+        totalPicks: pick.pickDetails.length,
+        isScored: true,
+        scoredAt: new Date()
+      });
 
       // Accumulate per-user updates
       const userId = pick.user_id;
       const prev = usersById.get(userId) || { totalPoints: 0, correctPicks: 0, totalPicks: 0, eventsParticipated: 0, bestEventScore: 0, pickIds: [] };
       prev.totalPoints += totalPoints;
       prev.correctPicks += correctPicks;
-      prev.totalPicks += pick.picks.length;
+      prev.totalPicks += pick.pickDetails.length;
       prev.eventsParticipated += 1;
       prev.bestEventScore = Math.max(prev.bestEventScore, totalPoints);
       prev.pickIds.push(pick.id);
       usersById.set(userId, prev);
     }
 
-    // Update user aggregates
-    const User = require('../models/User');
+    // Update user stats using the new UserStats table
     console.log(`\n🔄 Updating user statistics...`);
     for (const [userId, agg] of usersById.entries()) {
       const user = await User.findByPk(userId);
       if (!user) continue;
+      
+      // Get or create user stats
+      let userStats = await UserStats.findOne({ where: { userId } });
+      if (!userStats) {
+        userStats = await UserStats.create({ userId });
+      }
       
       // Check if this user has already been scored for this event
       const existingPick = await Pick.findOne({
@@ -423,12 +514,12 @@ router.put('/:id/results', adminAuth, async (req, res) => {
         for (const userPick of allUserPicks) {
           recalculatedTotalPoints += userPick.totalPoints || 0;
           recalculatedCorrectPicks += userPick.correctPicks || 0;
-          recalculatedTotalPicks += userPick.picks?.length || 0;
+          recalculatedTotalPicks += userPick.totalPicks || 0;
           recalculatedEventsParticipated += 1;
           recalculatedBestEventScore = Math.max(recalculatedBestEventScore, userPick.totalPoints || 0);
         }
         
-        await user.update({
+        await userStats.update({
           totalPoints: recalculatedTotalPoints,
           totalPicks: recalculatedTotalPicks,
           correctPicks: recalculatedCorrectPicks,
@@ -439,19 +530,25 @@ router.put('/:id/results', adminAuth, async (req, res) => {
         console.log(`  👤 ${user.username}: Recalculated totals - ${recalculatedTotalPoints} points, ${recalculatedCorrectPicks}/${recalculatedTotalPicks} correct`);
       } else {
         // First time scoring this event for this user, add to existing totals
-        await user.update({
-          totalPoints: user.totalPoints + agg.totalPoints,
-          totalPicks: user.totalPicks + agg.totalPicks,
-          correctPicks: user.correctPicks + agg.correctPicks,
-          eventsParticipated: user.eventsParticipated + agg.eventsParticipated,
-          bestEventScore: Math.max(user.bestEventScore, agg.bestEventScore)
+        await userStats.update({
+          totalPoints: userStats.totalPoints + agg.totalPoints,
+          totalPicks: userStats.totalPicks + agg.totalPicks,
+          correctPicks: userStats.correctPicks + agg.correctPicks,
+          eventsParticipated: userStats.eventsParticipated + agg.eventsParticipated,
+          bestEventScore: Math.max(userStats.bestEventScore, agg.bestEventScore)
         });
         console.log(`  👤 ${user.username}: +${agg.totalPoints} points, ${agg.correctPicks}/${agg.totalPicks} correct`);
       }
     }
 
     console.log(`\n🎉 Event scoring completed! ${picks.length} users scored.`);
-    res.json({ message: 'Results updated and picks scored', event });
+    
+    // Reload event with updated fights
+    const updatedEvent = await Event.findByPk(event.id, {
+      include: [{ model: Fight, as: 'fights' }]
+    });
+    
+    res.json({ message: 'Results updated and picks scored', event: updatedEvent });
   } catch (error) {
     console.error('Update event results error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -474,9 +571,22 @@ router.delete('/:id', adminAuth, async (req, res) => {
       // Hard delete: Remove all picks for this event and then the event itself
       console.log(`🗑️  Hard deleting event ${event.name} and all associated data...`);
       
-      const Pick = require('../models/Pick');
+              // First, get all pick IDs for this event
+      const picksToDelete = await Pick.findAll({
+        where: { event_id: event.id },
+        attributes: ['id']
+      });
       
-      // First, delete all picks for this event
+      const pickIds = picksToDelete.map(p => p.id);
+      
+      if (pickIds.length > 0) {
+        // Delete all pick details for these picks
+        await PickDetail.destroy({
+          where: { pickId: pickIds }
+        });
+      }
+      
+      // Then delete all picks for this event
       const deletedPicks = await Pick.destroy({
         where: { event_id: event.id }
       });
@@ -570,10 +680,9 @@ router.post('/recalculate-stats/:userId', adminAuth, async (req, res) => {
 // @access  Private/Admin
 router.post('/cleanup-orphaned-picks', adminAuth, async (req, res) => {
   try {
-    const { action = 'report' } = req.query; // 'report' or 'delete'
-    const Pick = require('../models/Pick');
-    
-    console.log('🧹 Starting orphaned picks cleanup...');
+            const { action = 'report' } = req.query; // 'report' or 'delete'
+        
+        console.log('🧹 Starting orphaned picks cleanup...');
     
     // Find picks for inactive events
     const orphanedPicks = await Pick.findAll({
@@ -593,6 +702,11 @@ router.post('/cleanup-orphaned-picks', adminAuth, async (req, res) => {
         where: { id: pickIds }
       });
       
+      // Delete the orphaned pick details
+      await PickDetail.destroy({
+        where: { pickId: pickIds }
+      });
+
       console.log(`🗑️  Deleted ${deletedCount} orphaned picks`);
       
       res.json({
@@ -608,7 +722,7 @@ router.post('/cleanup-orphaned-picks', adminAuth, async (req, res) => {
         eventId: pick.event_id,
         eventName: pick.event?.name || 'Unknown Event',
         eventDate: pick.event?.date,
-        pickCount: pick.picks?.length || 0,
+        pickCount: pick.pickDetails?.length || 0,
         isSubmitted: pick.isSubmitted,
         isScored: pick.isScored
       }));
@@ -633,8 +747,6 @@ router.post('/force-cleanup-all', adminAuth, async (req, res) => {
   try {
     console.log('🧹 Starting force cleanup of all orphaned data...');
     
-    const Pick = require('../models/Pick');
-    
     // First, find all picks for inactive events
     const orphanedPicks = await Pick.findAll({
       include: [{
@@ -652,6 +764,10 @@ router.post('/force-cleanup-all', adminAuth, async (req, res) => {
       const pickIds = orphanedPicks.map(p => p.id);
       deletedPicks = await Pick.destroy({
         where: { id: pickIds }
+      });
+      // Delete the orphaned pick details
+      await PickDetail.destroy({
+        where: { pickId: pickIds }
       });
       console.log(`🗑️  Deleted ${deletedPicks} orphaned picks`);
     }
