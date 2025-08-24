@@ -7,6 +7,7 @@ import { EventWithFights } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
 import { getActualEventStatus, getEventStatusText, getEventStatusColor } from '../utils/eventStatus';
+import { formatFighterRecord } from '../utils/formatRecord';
 
 const EventDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -177,7 +178,7 @@ const EventDetails: React.FC = () => {
                       <p className="text-ufc-red text-sm mb-2">"{fight.fighter1Nick}"</p>
                     )}
                     <p className="text-gray-400 text-sm">
-                      {fight.fighter1Record || 'N/A'}
+                      {formatFighterRecord(fight.fighter1Record)}
                     </p>
                   </div>
                   
@@ -216,7 +217,7 @@ const EventDetails: React.FC = () => {
                       <p className="text-ufc-red text-sm mb-2">"{fight.fighter2Nick}"</p>
                     )}
                     <p className="text-gray-400 text-sm">
-                      {fight.fighter2Record || 'N/A'}
+                      {formatFighterRecord(fight.fighter2Record)}
                     </p>
                   </div>
                 </div>
@@ -273,7 +274,7 @@ const EventDetails: React.FC = () => {
                       <p className="text-ufc-red text-xs mb-1">"{fight.fighter1Nick}"</p>
                     )}
                     <p className="text-gray-400 text-xs">
-                      {fight.fighter1Record || 'N/A'}
+                      {formatFighterRecord(fight.fighter1Record)}
                     </p>
                   </div>
                   
@@ -312,7 +313,7 @@ const EventDetails: React.FC = () => {
                       <p className="text-ufc-red text-xs mb-1">"{fight.fighter2Nick}"</p>
                     )}
                     <p className="text-gray-400 text-xs">
-                      {fight.fighter2Record || 'N/A'}
+                      {formatFighterRecord(fight.fighter2Record)}
                     </p>
                   </div>
                 </div>

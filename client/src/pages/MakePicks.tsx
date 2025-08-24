@@ -6,6 +6,7 @@ import { eventsAPI, picksAPI } from '../services/api';
 import { EventWithFights, UserPick, Fight } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import toast from 'react-hot-toast';
+import { formatFighterRecord } from '../utils/formatRecord';
 
 const MakePicks: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -480,7 +481,7 @@ const MakePicks: React.FC = () => {
                                               <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/50 rounded-full border border-gray-600/50">
                           <TrophyIcon className="h-4 w-4 text-ufc-gold" />
                           <p className="text-gray-300 text-sm font-mono">
-                            {fight.fighter1Record || 'N/A'}
+                            {formatFighterRecord(fight.fighter1Record)}
                           </p>
                         </div>
                     </div>
@@ -526,7 +527,7 @@ const MakePicks: React.FC = () => {
                                               <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800/50 rounded-full border border-gray-600/50">
                           <TrophyIcon className="h-4 w-4 text-ufc-gold" />
                           <p className="text-gray-300 text-sm font-mono">
-                            {fight.fighter2Record || 'N/A'}
+                            {formatFighterRecord(fight.fighter2Record)}
                           </p>
                         </div>
                     </div>

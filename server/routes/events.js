@@ -11,6 +11,27 @@ const { auth, adminAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Helper function to format fighter record
+const formatFighterRecord = (record) => {
+  if (!record) return '';
+  
+  // If it's already a string, return it
+  if (typeof record === 'string') return record;
+  
+  // If it's an object with wins, losses, draws properties
+  if (record && typeof record === 'object' && record.wins !== undefined) {
+    const { wins, losses, draws } = record;
+    if (draws > 0) {
+      return `${wins}-${losses}-${draws}`;
+    } else {
+      return `${wins}-${losses}`;
+    }
+  }
+  
+  // If it's any other object, try to convert to string
+  return String(record);
+};
+
 // Input validation middleware
 const validateEventInput = [
   body('name')
@@ -241,8 +262,8 @@ router.post('/', adminAuth, validateEventInput, async (req, res) => {
           fighter2Nick: fightData.fighter2?.nickname || fightData.fighter2Nick,
           fighter1Image: fightData.fighter1?.image || fightData.fighter1Image,
           fighter2Image: fightData.fighter2?.image || fightData.fighter2Image,
-          fighter1Record: String(fightData.fighter1?.record || fightData.fighter1Record || ''),
-          fighter2Record: String(fightData.fighter2?.record || fightData.fighter2Record || '')
+          fighter1Record: formatFighterRecord(fightData.fighter1?.record || fightData.fighter1Record),
+          fighter2Record: formatFighterRecord(fightData.fighter2?.record || fightData.fighter2Record)
         })
       );
       
@@ -329,8 +350,8 @@ router.put('/:id', adminAuth, validateEventInput, async (req, res) => {
           fighter2Nick: fightData.fighter2?.nickname || fightData.fighter2Nick,
           fighter1Image: fightData.fighter1?.image || fightData.fighter1Image,
           fighter2Image: fightData.fighter2?.image || fightData.fighter2Image,
-          fighter1Record: String(fightData.fighter1?.record || fightData.fighter1Record || ''),
-          fighter2Record: String(fightData.fighter2?.record || fightData.fighter2Record || '')
+          fighter1Record: formatFighterRecord(fightData.fighter1?.record || fightData.fighter1Record),
+          fighter2Record: formatFighterRecord(fightData.fighter2?.record || fightData.fighter2Record)
         })
       );
       
