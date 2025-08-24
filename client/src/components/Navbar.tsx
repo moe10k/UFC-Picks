@@ -12,8 +12,7 @@ import {
   PlusIcon,
   ChevronDownIcon,
   CalendarIcon,
-  ChartBarIcon,
-  PencilIcon,
+
   ShieldCheckIcon,
   EyeIcon,
   ShoppingBagIcon
@@ -64,7 +63,7 @@ const Navbar: React.FC = () => {
     { name: 'Dashboard', href: '/admin', icon: Cog6ToothIcon },
     { name: 'Create Event', href: '/admin/events/create', icon: PlusIcon },
     { name: 'Manage Events', href: '/admin/events', icon: CalendarIcon },
-    { name: 'Update Results', href: '/admin/results', icon: ChartBarIcon },
+
     { name: 'User Management', href: '/admin/users', icon: UserIcon },
   ];
 

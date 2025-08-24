@@ -24,7 +24,6 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminEvents from './pages/AdminEvents';
 import AdminCreateEvent from './pages/AdminCreateEvent';
 import AdminEditEvent from './pages/AdminEditEvent';
-import AdminResults from './pages/AdminResults';
 import AdminEventResults from './pages/AdminEventResults';
 import AdminUsers from './pages/AdminUsers';
 
@@ -161,13 +160,7 @@ const AppContent: React.FC = () => {
                 </AdminRoute>
               </ProtectedRoute>
             } />
-            <Route path="/admin/results" element={
-              <ProtectedRoute>
-                <AdminRoute>
-                  <AdminResults />
-                </AdminRoute>
-              </ProtectedRoute>
-            } />
+
             <Route path="/admin/users" element={
               <ProtectedRoute>
                 <AdminRoute>

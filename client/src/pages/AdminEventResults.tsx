@@ -43,7 +43,7 @@ const AdminEventResults: React.FC = () => {
       setResults(existingResults);
     } catch (error: any) {
       toast.error('Failed to load event');
-      navigate('/admin/results');
+      navigate('/admin/events');
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +110,7 @@ const AdminEventResults: React.FC = () => {
     try {
       await eventsAPI.updateResults(id!, results);
       toast.success('Results updated and picks scored successfully!');
-      navigate('/admin/results');
+      navigate('/admin/events');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update results');
     } finally {
@@ -150,7 +150,7 @@ const AdminEventResults: React.FC = () => {
     <div className="space-y-8">
       {/* Breadcrumb */}
       <Breadcrumb items={[
-        { name: 'Update Results', href: '/admin/results' },
+        { name: 'Manage Events', href: '/admin/events' },
         { name: event?.name || 'Event' }
       ]} />
       
@@ -366,7 +366,7 @@ const AdminEventResults: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => navigate('/admin/results')}
+            onClick={() => navigate('/admin/events')}
             className="btn-secondary"
           >
             Cancel
