@@ -5,6 +5,7 @@ import { eventsAPI, leaderboardAPI, picksAPI } from '../services/api';
 import { EventWithFights, UserStats } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { formatFighterRecord } from '../utils/formatRecord';
+import { getActualEventStatus, getEventStatusText, getEventStatusColor } from '../utils/eventStatus';
 import toast from 'react-hot-toast';
 
 const Dashboard: React.FC = () => {
@@ -92,6 +93,8 @@ const Dashboard: React.FC = () => {
   }
 
   const mainCardFights = upcomingEvent ? upcomingEvent.fights ? upcomingEvent.fights.filter(fight => fight.isMainCard) : [] : [];
+  const eventStatus = upcomingEvent ? getActualEventStatus(upcomingEvent) : null;
+  const isEventLive = eventStatus === 'live';
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -99,10 +102,18 @@ const Dashboard: React.FC = () => {
       <div className="lg:col-span-2 space-y-6">
         {upcomingEvent ? (
           <>
-            {/* Upcoming Event Card */}
+            {/* Event Card */}
             <div className="card">
               <div className="text-center mb-6">
                 <h2 className="text-3xl font-bold text-white mb-2">{upcomingEvent.name}</h2>
+                {/* Event Status Badge */}
+                {eventStatus && (
+                  <div className="mb-3">
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getEventStatusColor(eventStatus)}`}>
+                      {getEventStatusText(eventStatus)}
+                    </span>
+                  </div>
+                )}
                 <p className="text-gray-400">
                   {upcomingEvent.venue.name} • {upcomingEvent.venue.city}, {upcomingEvent.venue.country} • {new Date(upcomingEvent.date).toLocaleDateString('en-US', {
                     weekday: 'long',
@@ -115,19 +126,30 @@ const Dashboard: React.FC = () => {
 
               {/* CTA Button */}
               <div className="text-center mb-8">
-                <Link
-                  to={`/event/${upcomingEvent.id}/picks`}
-                  className="relative inline-flex items-center justify-center p-4 px-8 py-4 overflow-hidden font-bold text-white text-xl rounded-lg shadow-2xl group transition-all duration-300 hover:scale-105 min-w-[200px]"
-                >
-                  <span className="absolute top-0 left-0 w-40 h-40 -mt-10 -ml-3 transition-all duration-700 bg-ufc-gold rounded-full blur-md ease opacity-80"></span>
-                  <span className="absolute inset-0 w-full h-full transition duration-700 group-hover:rotate-180 ease">
-                    <span className="absolute bottom-0 left-0 w-24 h-24 -ml-10 bg-yellow-400 rounded-full blur-md"></span>
-                    <span className="absolute bottom-0 right-0 w-24 h-24 -mr-10 bg-orange-400 rounded-full blur-md"></span>
-                  </span>
-                  <span className="relative text-white font-bold text-xl">
-                    {hasExistingPicks ? 'Modify Picks' : 'Make Your Picks'}
-                  </span>
-                </Link>
+                {isEventLive ? (
+                  <Link
+                    to={`/event/${upcomingEvent.id}`}
+                    className="relative inline-flex items-center justify-center p-4 px-8 py-4 overflow-hidden font-bold text-white text-xl rounded-lg shadow-2xl group transition-all duration-300 hover:scale-105 min-w-[200px] bg-gray-600"
+                  >
+                    <span className="relative text-white font-bold text-xl">
+                      View Event Details
+                    </span>
+                  </Link>
+                ) : (
+                  <Link
+                    to={`/event/${upcomingEvent.id}/picks`}
+                    className="relative inline-flex items-center justify-center p-4 px-8 py-4 overflow-hidden font-bold text-white text-xl rounded-lg shadow-2xl group transition-all duration-300 hover:scale-105 min-w-[200px]"
+                  >
+                    <span className="absolute top-0 left-0 w-40 h-40 -mt-10 -ml-3 transition-all duration-700 bg-ufc-gold rounded-full blur-md ease opacity-80"></span>
+                    <span className="absolute inset-0 w-full h-full transition duration-700 group-hover:rotate-180 ease">
+                      <span className="absolute bottom-0 left-0 w-24 h-24 -ml-10 bg-yellow-400 rounded-full blur-md"></span>
+                      <span className="absolute bottom-0 right-0 w-24 h-24 -mr-10 bg-orange-400 rounded-full blur-md"></span>
+                    </span>
+                    <span className="relative text-white font-bold text-xl">
+                      {hasExistingPicks ? 'Modify Picks' : 'Make Your Picks'}
+                    </span>
+                  </Link>
+                )}
               </div>
 
               {/* Main Card Fights */}
@@ -222,32 +244,46 @@ const Dashboard: React.FC = () => {
             Welcome back, @{user?.username}! 👊
           </h1>
           <p className="text-gray-400">
-            {upcomingEvent ? 'Ready to make your picks for the next UFC event?' : 'Stay tuned for the next UFC event!'}
+            {upcomingEvent ? (
+              isEventLive ? 'The UFC event is live now! Watch the action!' : 'Ready to make your picks for the next UFC event?'
+            ) : 'Stay tuned for the next UFC event!'}
           </p>
         </div>
 
         {/* Countdown Section */}
         {upcomingEvent ? (
           <div className="card text-center">
-            <h3 className="text-xl font-semibold text-white mb-4">⏰ Picks Lock In</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="countdown-item">
-                <div className="text-2xl font-bold text-ufc-red">{timeRemaining.days}</div>
-                <div className="text-sm text-gray-400">Days</div>
-              </div>
-              <div className="countdown-item">
-                <div className="text-2xl font-bold text-ufc-red">{timeRemaining.hours.toString().padStart(2, '0')}</div>
-                <div className="text-sm text-gray-400">Hours</div>
-              </div>
-              <div className="countdown-item">
-                <div className="text-2xl font-bold text-ufc-red">{timeRemaining.minutes.toString().padStart(2, '0')}</div>
-                <div className="text-sm text-gray-400">Minutes</div>
-              </div>
-              <div className="countdown-item">
-                <div className="text-2xl font-bold text-ufc-red">{timeRemaining.seconds.toString().padStart(2, '0')}</div>
-                <div className="text-sm text-gray-400">Seconds</div>
-              </div>
-            </div>
+            {isEventLive ? (
+              <>
+                <h3 className="text-xl font-semibold text-white mb-4">🔥 Event is Live!</h3>
+                <div className="text-center py-4">
+                  <p className="text-lg text-ufc-red font-semibold mb-2">Fights are happening now!</p>
+                  <p className="text-gray-400 text-sm">Picks are locked in. Watch the action!</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-xl font-semibold text-white mb-4">⏰ Picks Lock In</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="countdown-item">
+                    <div className="text-2xl font-bold text-ufc-red">{timeRemaining.days}</div>
+                    <div className="text-sm text-gray-400">Days</div>
+                  </div>
+                  <div className="countdown-item">
+                    <div className="text-2xl font-bold text-ufc-red">{timeRemaining.hours.toString().padStart(2, '0')}</div>
+                    <div className="text-sm text-gray-400">Hours</div>
+                  </div>
+                  <div className="countdown-item">
+                    <div className="text-2xl font-bold text-ufc-red">{timeRemaining.minutes.toString().padStart(2, '0')}</div>
+                    <div className="text-sm text-gray-400">Minutes</div>
+                  </div>
+                  <div className="countdown-item">
+                    <div className="text-2xl font-bold text-ufc-red">{timeRemaining.seconds.toString().padStart(2, '0')}</div>
+                    <div className="text-sm text-gray-400">Seconds</div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         ) : (
           /* Placeholder when no upcoming event */

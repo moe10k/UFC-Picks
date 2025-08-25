@@ -158,22 +158,33 @@ router.get('/', async (req, res) => {
 });
 
 // @route   GET /api/events/upcoming
-// @desc    Get next upcoming event
+// @desc    Get next upcoming or live event
 // @access  Public
 router.get('/upcoming', async (req, res) => {
   try {
     const event = await Event.findOne({
       where: {
-        date: { [Op.gt]: new Date() },
-        status: 'upcoming',
-        isActive: true
+        [Op.or]: [
+          // Upcoming events (future date, status upcoming)
+          {
+            date: { [Op.gt]: new Date() },
+            status: 'upcoming',
+            isActive: true
+          },
+          // Live events (past date but not completed, status live or upcoming)
+          {
+            date: { [Op.lte]: new Date() },
+            status: { [Op.in]: ['upcoming', 'live'] },
+            isActive: true
+          }
+        ]
       },
       include: [{ model: Fight, as: 'fights' }],
       order: [['date', 'ASC']]
     });
 
     if (!event) {
-      return res.status(404).json({ message: 'No upcoming events found' });
+      return res.status(404).json({ message: 'No upcoming or live events found' });
     }
 
     const transformedEvent = transformEventForFrontend(event);
