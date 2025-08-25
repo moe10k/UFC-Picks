@@ -623,7 +623,7 @@ router.delete('/:id', adminAuth, async (req, res) => {
       // Hard delete: Remove all picks for this event and then the event itself
       console.log(`🗑️  Hard deleting event ${event.name} and all associated data...`);
       
-              // First, get all pick IDs for this event
+      // First, get all pick IDs for this event
       const picksToDelete = await Pick.findAll({
         where: { event_id: event.id },
         attributes: ['id']
@@ -633,9 +633,10 @@ router.delete('/:id', adminAuth, async (req, res) => {
       
       if (pickIds.length > 0) {
         // Delete all pick details for these picks
-        await PickDetail.destroy({
+        const deletedPickDetails = await PickDetail.destroy({
           where: { pickId: pickIds }
         });
+        console.log(`🗑️  Deleted ${deletedPickDetails} pick details for event ${event.name}`);
       }
       
       // Then delete all picks for this event
@@ -645,13 +646,22 @@ router.delete('/:id', adminAuth, async (req, res) => {
       
       console.log(`🗑️  Deleted ${deletedPicks} picks for event ${event.name}`);
       
-      // Then delete the event (this should cascade due to foreign key constraints)
+      // Delete all fights for this event
+      const deletedFights = await Fight.destroy({
+        where: { event_id: event.id }
+      });
+      
+      console.log(`🗑️  Deleted ${deletedFights} fights for event ${event.name}`);
+      
+      // Finally delete the event itself
       await event.destroy();
       
-      console.log(`✅ Event ${event.name} and ${deletedPicks} picks completely removed`);
+      console.log(`✅ Event ${event.name} and all associated data completely removed`);
       res.json({ 
         message: 'Event and all associated data completely removed', 
-        picksDeleted: deletedPicks 
+        picksDeleted: deletedPicks,
+        pickDetailsDeleted: pickIds.length > 0 ? 'all' : 0,
+        fightsDeleted: deletedFights
       });
     } else {
       // Soft delete: Mark event as inactive (picks remain but won't show in UI)

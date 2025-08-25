@@ -191,105 +191,121 @@ const AdminCreateEvent: React.FC = () => {
         <div className="card">
           <h2 className="text-2xl font-bold text-white mb-6">Event Details</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-white font-medium mb-2">Event Name *</label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-                placeholder="UFC 320: Main Event vs. Co-Main"
-                required
-              />
+          {/* Event Information */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-white mb-4 border-b border-gray-600 pb-2">Event Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-2">
+                <label className="block text-white font-medium mb-2">Event Name *</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
+                  placeholder="UFC 320: Main Event vs. Co-Main"
+                  required
+                />
+              </div>
+              
+              <div className="md:col-span-2">
+                <label className="block text-white font-medium mb-2">Description</label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
+                  rows={3}
+                  placeholder="Brief description of the event..."
+                />
+              </div>
             </div>
-            
-            <div>
-              <label className="block text-white font-medium mb-2">Event Date *</label>
-              <input
-                type="datetime-local"
-                name="date"
-                value={formData.date}
-                onChange={handleInputChange}
-                className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-                required
-              />
+          </div>
+
+          {/* Venue Information */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-white mb-4 border-b border-gray-600 pb-2">Venue Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div>
+                <label className="block text-white font-medium mb-2">Venue Name *</label>
+                <input
+                  type="text"
+                  name="venueName"
+                  value={formData.venueName}
+                  onChange={handleInputChange}
+                  className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
+                  placeholder="T-Mobile Arena"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-white font-medium mb-2">Venue City *</label>
+                <input
+                  type="text"
+                  name="venueCity"
+                  value={formData.venueCity}
+                  onChange={handleInputChange}
+                  className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
+                  placeholder="Las Vegas"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-white font-medium mb-2">Venue State</label>
+                <input
+                  type="text"
+                  name="venueState"
+                  value={formData.venueState}
+                  onChange={handleInputChange}
+                  className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
+                  placeholder="Nevada"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-white font-medium mb-2">Venue Country *</label>
+                <input
+                  type="text"
+                  name="venueCountry"
+                  value={formData.venueCountry}
+                  onChange={handleInputChange}
+                  className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
+                  placeholder="United States"
+                  required
+                />
+              </div>
             </div>
-            
-            <div>
-              <label className="block text-white font-medium mb-2">Venue Name *</label>
-              <input
-                type="text"
-                name="venueName"
-                value={formData.venueName}
-                onChange={handleInputChange}
-                className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-                placeholder="T-Mobile Arena"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-white font-medium mb-2">Venue City *</label>
-              <input
-                type="text"
-                name="venueCity"
-                value={formData.venueCity}
-                onChange={handleInputChange}
-                className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-                placeholder="Las Vegas"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-white font-medium mb-2">Venue State</label>
-              <input
-                type="text"
-                name="venueState"
-                value={formData.venueState}
-                onChange={handleInputChange}
-                className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-                placeholder="Nevada"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-white font-medium mb-2">Venue Country *</label>
-              <input
-                type="text"
-                name="venueCountry"
-                value={formData.venueCountry}
-                onChange={handleInputChange}
-                className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-                placeholder="United States"
-                required
-              />
-            </div>
-            
-            <div className="md:col-span-2">
-              <label className="block text-white font-medium mb-2">Description</label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-                rows={3}
-                placeholder="Brief description of the event..."
-              />
-            </div>
-            
-            <div>
-              <label className="block text-white font-medium mb-2">Pick Deadline *</label>
-              <input
-                type="datetime-local"
-                name="pickDeadline"
-                value={formData.pickDeadline}
-                onChange={handleInputChange}
-                className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-                required
-              />
+          </div>
+
+          {/* Timing Information */}
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-4 border-b border-gray-600 pb-2">Timing Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-white font-medium mb-2">Event Date *</label>
+                <input
+                  type="datetime-local"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleInputChange}
+                  className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-white font-medium mb-2">Pick Deadline *</label>
+                <input
+                  type="datetime-local"
+                  name="pickDeadline"
+                  value={formData.pickDeadline}
+                  onChange={handleInputChange}
+                  className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
+                  required
+                />
+              </div>
             </div>
           </div>
         </div>

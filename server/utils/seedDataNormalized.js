@@ -103,23 +103,9 @@ const sampleUsers = [
   {
     username: "admin",
     email: "admin@ufcpicks.com",
-    password: "admin123",
+    password: "A1!aaaaa",
     isAdmin: true,
     isOwner: true
-  },
-  {
-    username: "user1",
-    email: "user1@example.com",
-    password: "password123",
-    isAdmin: false,
-    isOwner: false
-  },
-  {
-    username: "user2", 
-    email: "user2@example.com",
-    password: "password123",
-    isAdmin: false,
-    isOwner: false
   }
 ];
 
@@ -186,95 +172,21 @@ const seedDataNormalized = async () => {
       }
     }
 
-    // Create sample picks for users
-    console.log('📝 Creating sample picks...');
+    // No picks created - admin only setup
+    console.log('📝 Skipping picks creation - admin only setup');
     const createdPicks = [];
-    
-    for (let i = 0; i < Math.min(createdUsers.length - 1, 2); i++) { // Skip admin user
-      const user = createdUsers[i + 1]; // Start from non-admin users
-      
-      // Create a pick for the event
-      const existingPick = await Pick.findOne({ 
-        where: { userId: user.id, eventId: event.id } 
-      });
-      
-      let pick;
-      if (!existingPick) {
-        pick = await Pick.create({
-          userId: user.id,
-          eventId: event.id,
-          isSubmitted: true,
-          submittedAt: new Date(),
-          totalPicks: createdFights.length,
-          accuracy: 0,
-          notes: "Sample pick submission"
-        });
-        createdPicks.push(pick);
-        console.log(`✅ Created pick for user: ${user.username}`);
-      } else {
-        pick = existingPick;
-        createdPicks.push(pick);
-        console.log(`ℹ️  Pick already exists for user: ${user.username}`);
-      }
 
-      // Create pick details for each fight
-      for (const fight of createdFights) {
-        const existingPickDetail = await PickDetail.findOne({
-          where: { pickId: pick.id, fightId: fight.id }
-        });
-        
-        if (!existingPickDetail) {
-          const pickDetail = await PickDetail.create({
-            pickId: pick.id,
-            fightId: fight.id,
-            predictedWinner: Math.random() > 0.5 ? 'fighter1' : 'fighter2',
-            predictedMethod: ['KO/TKO', 'Submission', 'Decision'][Math.floor(Math.random() * 3)],
-            predictedRound: Math.floor(Math.random() * 5) + 1,
-            predictedTime: "3:00",
-            pointsEarned: 0,
-            isCorrect: false
-          });
-          console.log(`✅ Created pick detail for fight ${fight.fightNumber}`);
-        } else {
-          console.log(`ℹ️  Pick detail already exists for fight ${fight.fightNumber}`);
-        }
-      }
-    }
-
-    // Create user stats
-    console.log('📊 Creating user stats...');
-    for (const user of createdUsers) {
-      if (user.username !== 'admin') {
-        const existingStats = await UserStats.findOne({ where: { userId: user.id } });
-        if (!existingStats) {
-          const stats = await UserStats.create({
-            userId: user.id,
-            totalPicks: createdFights.length,
-            correctPicks: 0,
-            totalPoints: 0,
-            eventsParticipated: 1,
-            bestEventScore: 0,
-            currentStreak: 0,
-            longestStreak: 0,
-            averageAccuracy: 0.00
-          });
-          console.log(`✅ Created stats for user: ${user.username}`);
-        } else {
-          console.log(`ℹ️  Stats already exist for user: ${user.username}`);
-        }
-      }
-    }
+    // No user stats created - admin only setup
+    console.log('📊 Skipping user stats creation - admin only setup');
 
     console.log('\n🎉 Normalized database seeding completed successfully!');
     console.log('\n📋 Summary:');
-    console.log(`   Users: ${createdUsers.length}`);
+    console.log(`   Users: ${createdUsers.length} (Admin only)`);
     console.log(`   Events: ${createdEvents.length}`);
     console.log(`   Fights: ${createdFights.length}`);
-    console.log(`   Picks: ${createdPicks.length}`);
-    console.log('\n🔑 Sample login credentials:');
-    console.log('   Admin: admin@ufcpicks.com / admin123');
-    console.log('   User1: user1@example.com / password123');
-    console.log('   User2: user2@example.com / password123');
+    console.log(`   Picks: ${createdPicks.length} (None - admin only setup)`);
+    console.log('\n🔑 Admin login credentials:');
+    console.log('   Admin: admin@ufcpicks.com / A1!aaaaa');
     
   } catch (error) {
     console.error('❌ Error seeding normalized database:', error);
@@ -283,3 +195,16 @@ const seedDataNormalized = async () => {
 };
 
 module.exports = seedDataNormalized;
+
+// Allow direct execution
+if (require.main === module) {
+  seedDataNormalized()
+    .then(() => {
+      console.log('✅ Seeding completed!');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('❌ Seeding failed:', error);
+      process.exit(1);
+    });
+}
