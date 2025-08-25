@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import LoadingSpinner from './components/LoadingSpinner';
 import AdminRoute from './components/AdminRoute';
+import LegalFooter from './components/LegalFooter';
 
 // Pages
 import Login from './pages/Login';
@@ -66,9 +67,9 @@ const AppContent: React.FC = () => {
 
   return (
     <Router>
-      <div className="min-h-screen bg-black/60">
+      <div className="min-h-screen bg-black/60 flex flex-col">
         <Navbar />
-        <main className="container mx-auto px-4 py-8">
+        <main className="container mx-auto px-4 py-8 flex-1">
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={
@@ -174,6 +175,7 @@ const AppContent: React.FC = () => {
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
+        <LegalFooter />
       </div>
     </Router>
   );
