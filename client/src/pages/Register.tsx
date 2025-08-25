@@ -131,7 +131,7 @@ const Register: React.FC = () => {
           <div>
             <div className="mx-auto flex items-center justify-center shadow-lg">
               <div className="w-12 h-12 bg-ufc-red rounded-lg flex items-center justify-center mr-3">
-                <span className="text-white font-bold text-lg">UFC</span>
+                <span className="text-white font-bold text-lg">MMA</span>
               </div>
               <span className="text-white font-bold text-3xl">Picks</span>
             </div>

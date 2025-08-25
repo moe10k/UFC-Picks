@@ -12,10 +12,10 @@ import {
   PlusIcon,
   ChevronDownIcon,
   CalendarIcon,
-
   ShieldCheckIcon,
   EyeIcon,
-  ShoppingBagIcon
+  ShoppingBagIcon,
+  CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 
 const Navbar: React.FC = () => {
@@ -56,6 +56,7 @@ const Navbar: React.FC = () => {
     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
     { name: 'My Picks', href: '/my-picks', icon: UserIcon },
     { name: 'Leaderboard', href: '/leaderboard', icon: TrophyIcon },
+    { name: 'Wager', href: '/wager', icon: CurrencyDollarIcon, comingSoon: true },
     { name: 'Store', href: '/store', icon: ShoppingBagIcon, comingSoon: true },
   ];
 
@@ -78,19 +79,20 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="bg-ufc-gray border-b border-gray-700">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-1 sm:px-2 lg:px-4">
         <div className="flex justify-between h-16">
-          <div className="flex items-center">
+          {/* Logo - Moved more to the left */}
+          <div className="flex items-center flex-shrink-0">
             <Link to="/dashboard" className="flex-shrink-0 flex items-center">
               <div className="w-8 h-8 bg-ufc-red rounded-lg flex items-center justify-center mr-3">
-                <span className="text-white font-bold text-sm">UFC</span>
+                <span className="text-white font-bold text-sm">MMA</span>
               </div>
               <span className="text-white font-bold text-xl">Picks</span>
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          {/* Desktop Navigation - Centered with more space */}
+          <div className="hidden md:flex items-center space-x-6 flex-1 justify-center">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
               const isComingSoon = item.comingSoon;
@@ -99,11 +101,11 @@ const Navbar: React.FC = () => {
                 return (
                   <div
                     key={item.name}
-                    className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-400 cursor-not-allowed opacity-60"
+                    className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-400 cursor-not-allowed opacity-60 whitespace-nowrap"
                   >
                     <item.icon className="w-5 h-5 mr-2" />
                     {item.name}
-                    <span className="ml-2 px-2 py-0.5 bg-gray-600 text-xs font-semibold rounded-full">
+                    <span className="ml-2 px-2 py-0.5 bg-gray-600 text-xs font-semibold rounded-full whitespace-nowrap">
                       Coming Soon
                     </span>
                   </div>
@@ -184,8 +186,8 @@ const Navbar: React.FC = () => {
             )}
           </div>
 
-          {/* User Menu */}
-          <div className="hidden md:flex items-center space-x-4">
+          {/* User Menu - Moved more to the right */}
+          <div className="hidden md:flex items-center space-x-4 flex-shrink-0">
             <div className="relative" ref={userDropdownRef}>
               <button
                 onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}

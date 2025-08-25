@@ -125,6 +125,35 @@
   .winner-option input:checked + .winner-option-content {
     @apply border-ufc-red bg-gradient-to-r from-ufc-red/20 to-red-600/20 shadow-lg shadow-ufc-red/20;
   }
+
+  /* Legal Footer Styles */
+  .legal-footer {
+    @apply mt-auto border-t border-gray-700/50 bg-ufc-dark/80 backdrop-blur-sm;
+  }
+  
+  .legal-footer .bg-ufc-gray\/50 {
+    @apply bg-opacity-50;
+  }
+  
+  .legal-footer .border-gray-600\/30 {
+    @apply border-opacity-30;
+  }
+  
+  /* Hover effects for interactive elements */
+  .legal-footer button:hover {
+    @apply text-gray-200;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .legal-footer .flex.items-center.justify-between {
+      @apply flex-col space-y-2 items-start;
+    }
+    
+    .legal-footer .space-x-4 {
+      @apply space-x-2;
+    }
+  }
 }
 
 @layer utilities {
