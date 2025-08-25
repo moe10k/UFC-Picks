@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { eventsAPI } from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
+import FighterImageUpload from '../components/FighterImageUpload';
 import toast from 'react-hot-toast';
 
 interface Fighter {
@@ -389,13 +390,11 @@ const AdminCreateEvent: React.FC = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-white font-medium mb-2">Image URL</label>
-                  <input
-                    type="url"
-                    value={newFight.fighter1.image}
-                    onChange={(e) => handleFighterChange(1, 'image', e.target.value)}
-                    className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-                    placeholder="https://example.com/fighter.jpg"
+                  <FighterImageUpload
+                    fighterNumber={1}
+                    currentImageUrl={newFight.fighter1.image}
+                    onImageChange={(url) => handleFighterChange(1, 'image', url)}
+                    onImageRemove={() => handleFighterChange(1, 'image', '')}
                   />
                 </div>
                 
@@ -462,13 +461,11 @@ const AdminCreateEvent: React.FC = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-white font-medium mb-2">Image URL</label>
-                  <input
-                    type="url"
-                    value={newFight.fighter2.image}
-                    onChange={(e) => handleFighterChange(2, 'image', e.target.value)}
-                    className="w-full p-3 bg-gray-800 border border-gray-600 rounded-lg text-white"
-                    placeholder="https://example.com/fighter.jpg"
+                  <FighterImageUpload
+                    fighterNumber={2}
+                    currentImageUrl={newFight.fighter2.image}
+                    onImageChange={(url) => handleFighterChange(2, 'image', url)}
+                    onImageRemove={() => handleFighterChange(2, 'image', '')}
                   />
                 </div>
                 

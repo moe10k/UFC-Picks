@@ -8,6 +8,29 @@ const PickDetail = require('../models/PickDetail');
 const UserStats = require('../models/UserStats');
 const User = require('../models/User');
 const { auth, adminAuth } = require('../middleware/auth');
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+
+// Configure Cloudinary (only if credentials provided)
+if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+}
+
+// Multer config for in-memory storage and basic limits
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files are allowed'));
+    }
+    cb(null, true);
+  }
+});
 
 const router = express.Router();
 
@@ -1018,6 +1041,55 @@ router.post('/fix-completed-status', adminAuth, async (req, res) => {
   } catch (error) {
     console.error('Fix completed events status error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/events/upload-fighter-image
+// @desc    Upload fighter image and return Cloudinary URL (Admin only)
+// @access  Private/Admin
+router.post('/upload-fighter-image', adminAuth, upload.single('fighterImage'), async (req, res) => {
+  try {
+    if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+      return res.status(500).json({ message: 'Image upload service not configured' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const mimeType = req.file.mimetype || '';
+    if (!mimeType.startsWith('image/')) {
+      return res.status(400).json({ message: 'Only image files are allowed' });
+    }
+
+    // Convert buffer to data URI for Cloudinary
+    const base64 = req.file.buffer.toString('base64');
+    const dataUri = `data:${mimeType};base64,${base64}`;
+
+    const uploadOptions = {
+      folder: 'ufc-picks/fighter-images',
+      public_id: `fighter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      resource_type: 'image',
+      overwrite: true,
+      transformation: [
+        { width: 300, height: 300, crop: 'fill', gravity: 'face' },
+        { radius: 'max' } // Make it circular
+      ]
+    };
+
+    const uploadResult = await cloudinary.uploader.upload(dataUri, uploadOptions);
+
+    return res.json({
+      message: 'Fighter image uploaded successfully',
+      imageUrl: uploadResult.secure_url,
+      publicId: uploadResult.public_id
+    });
+  } catch (error) {
+    console.error('Fighter image upload error:', error);
+    if (error.message && error.message.includes('File too large')) {
+      return res.status(400).json({ message: 'File too large. Max size is 2MB.' });
+    }
+    return res.status(500).json({ message: 'Server error uploading fighter image' });
   }
 });
 

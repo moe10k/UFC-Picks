@@ -226,6 +226,15 @@ export const eventsAPI = {
     const response = await api.post('/events/fix-completed-status');
     return response.data;
   },
+
+  uploadFighterImage: async (file: File): Promise<{ message: string; imageUrl: string; publicId: string }> => {
+    const form = new FormData();
+    form.append('fighterImage', file);
+    const response = await api.post('/events/upload-fighter-image', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
 };
 
 // Picks API
